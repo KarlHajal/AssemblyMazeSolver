@@ -1,4 +1,4 @@
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  1
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -20,1120 +20,1477 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
   00000011            00011 ADDRESSING_COUNTER      EQU     d'17'
   00000012            00012 CURRENT_ADDRESS         EQU     d'18'
   00000013            00013 OBSTACLE_COUNTER        EQU     d'19'
-  00000032            00014 REMAINING_NUMBER        EQU     d'50'
-0000                  00015                         ORG             0x0
-0000   2808           00016                         GOTO    START
-                      00017 
-0004                  00018                         ORG     0x04
-0004   180B           00019                         BTFSC   INTCON, RBIF    ;interrupt for button presses
-0005   28F0           00020                         GOTO    BUTTONPRESS
-0006   190B           00021                         BTFSC   INTCON, T0IF    ;timer interrupt flag test
-0007   2937           00022                         GOTO    timerInterrupt  
-                      00023 
-                      00024 
-                      00025                         
-0008   0185           00026 START           CLRF    PORTA
-                      00027                         ;clearing flags for menu star
-0009   018F           00028                         CLRF            SELECT
-000A   3002           00029                         MOVLW   b'10'
-000B   008F           00030                         MOVWF   SELECT  
-                      00031 
-                      00032                         
-000C   1683           00033                         BSF             STATUS,RP0      ;jumping to bank 1
+  00000028            00014 CURRENT_POSITION        EQU     d'40'   ;RAMI
+  00000029            00015 ITERATIONS_COUNTER  EQU d'41'   ;RAMI
+  0000002A            00016 STARTING_POSITION EQU d'42'     ;RAMI
+  0000002A            00017 CURSOR_POSITION         EQU     d'42'   ;RAMI
+  0000002B            00018 PREVIOUS_COMMAND        EQU     d'43'   ;
+  0000002B            00019 MAZE_STATUS             EQU     d'43'   ; to check if maze solved, no path, or not solved
+                      00020 ;      0th bit: solved, not solved
+                      00021 ;          1st bit: path, no path
+  00000032            00022 REMAINING_NUMBER        EQU     d'50'
+  0000002C            00023 LINE    EQU             d'44'
+  0000003B            00024 TEMP    EQU             d'59';RAMI
+                      00025 
+0000                  00026                         ORG             0x0
+0000   2808           00027                         GOTO    START
+                      00028 
+0004                  00029                         ORG     0x04
+0004   180B           00030                         BTFSC   INTCON, RBIF    ;interrupt for button presses
+0005   28F6           00031                         GOTO    BUTTONPRESS
+0006   190B           00032                         BTFSC   INTCON, T0IF    ;timer interrupt flag test
+0007   2943           00033                         GOTO    timerInterrupt  
+                      00034 
+                      00035 
+                      00036                         
+0008   0185           00037 START           CLRF    PORTA
+                      00038                         ;clearing flags for menu star
+0009   018F           00039                         CLRF            SELECT
+000A   3002           00040                         MOVLW   b'10'
+000B   008F           00041                         MOVWF   SELECT  
+                      00042 
+                      00043                         
+000C   1683           00044                         BSF             STATUS,RP0      ;jumping to bank 1
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-000D   0185           00034                         CLRF    TRISA   ;all port A out
-                      00035                         
-                      00036                         ;CONFIGURING PORTB PINS:
-                      00037                         ;RB0 -> OUTPUT TO BUZZER
-                      00038                         ;RB4-7 -> INPUTS 
-                      00039                         ;RB2 , RB3 -> OUTPUTS TO LEDS
-                      00040                         ;RB1 -> OUTPUT TO LCD ENABLE
-000E   30F0           00041                         MOVLW   0xF0    
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-000F   0086           00042                         MOVWF   TRISB
-                      00043 
-0010   3087           00044                         MOVLW   b'10000111'     ;SETTING OPTION REG to support interrupts
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0011   0081           00045                         MOVWF   OPTION_REG
-                      00046 
-0012   1283           00047                         BCF             STATUS,RP0      ;jumping back to bank 0
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  2
+000D   0185           00045                         CLRF    TRISA   ;all port A out
+                      00046                         
+                      00047                         ;CONFIGURING PORTB PINS:
+                      00048                         ;RB0 -> OUTPUT TO BUZZER
+                      00049                         ;RB4-7 -> INPUTS 
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  2
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00048                         
-0013   0185           00049                         CLRF    PORTA   ;clearing PORTA
-0014   0186           00050                         CLRF    PORTB   ;CLEARING PORTB
-                      00051 
-0015   2292           00052                         CALL    POWERUPDELAY ;delaying 40ms waiting power up LCD
-                      00053                         
-0016   3002           00054                         MOVLW   b'00010'
-0017   228C           00055                         CALL    ET
-                      00056                         
-0018   3002           00057                         MOVLW   b'00010'
-0019   228C           00058                         CALL    ET
-                      00059 
-001A   3008           00060                         MOVLW   b'01000'        ;N=1 2 line mode, F=0
-001B   228C           00061                         CALL    ET
+                      00050                         ;RB2 , RB3 -> OUTPUTS TO LEDS
+                      00051                         ;RB1 -> OUTPUT TO LCD ENABLE
+000E   30F0           00052                         MOVLW   0xF0    
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000F   0086           00053                         MOVWF   TRISB
+                      00054 
+0010   3087           00055                         MOVLW   b'10000111'     ;SETTING OPTION REG to support interrupts
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0011   0081           00056                         MOVWF   OPTION_REG
+                      00057 
+0012   1283           00058                         BCF             STATUS,RP0      ;jumping back to bank 0
+                      00059                         
+0013   0185           00060                         CLRF    PORTA   ;clearing PORTA
+0014   0186           00061                         CLRF    PORTB   ;CLEARING PORTB
                       00062 
-001C   3000           00063                         MOVLW   b'00000'        ;initializing display
-001D   228C           00064                         CALL    ET                      
-                      00065 
-001E   300C           00066                         MOVLW   b'01100'        ;setting display to ON
-001F   228C           00067                         CALL    ET
-                      00068 
-0020   22B9           00069                         CALL    CURSOR_MOVERIGHT
+0015   234A           00063                         CALL    POWERUPDELAY ;delaying 40ms waiting power up LCD
+                      00064                         
+0016   3002           00065                         MOVLW   b'00010'
+0017   233E           00066                         CALL    ET
+                      00067                         
+0018   3002           00068                         MOVLW   b'00010'
+0019   233E           00069                         CALL    ET
                       00070 
-0021   22AA           00071                         CALL    CLEARDISPLAY
-                      00072 
-                      00073                         
-                      00074 
-0022   2200           00075 WELCOME         CALL    charSp  ;Welcome Screen
-0023   2200           00076                         CALL    charSp
-0024   2200           00077                         CALL    charSp
-0025   220F           00078                         CALL    letterM
-0026   2223           00079                         CALL    letterA
-0027   224B           00080                         CALL    letterZ
-0028   2219           00081                         CALL    letterE
-0029   2200           00082                         CALL    charSp
-002A   2241           00083                         CALL    letterS
-002B   2237           00084                         CALL    letterO
-002C   222D           00085                         CALL    letterL
-002D   2205           00086                         CALL    letterV
-002E   2219           00087                         CALL    letterE
-002F   220A           00088                         CALL    letterR
-                      00089 
-0030   2292           00090                         CALL    POWERUPDELAY    ; delay before clearing the display
-0031   22AA           00091                         CALL    CLEARDISPLAY    ; clear display         
-                      00092 
-                      00093 
-                      00094 
-                      00095 ;----------------|
-                      00096 ;START MENU              |
-                      00097 ;----------------|
-                      00098 
-0032   2200           00099 MENU            CALL    charSp  ;Mode Selection Menu
-0033   2200           00100                         CALL    charSp
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  3
+001A   3008           00071                         MOVLW   b'01000'        ;N=1 2 line mode, F=0
+001B   233E           00072                         CALL    ET
+                      00073 
+001C   3000           00074                         MOVLW   b'00000'        ;initializing display
+001D   233E           00075                         CALL    ET                      
+                      00076 
+001E   300C           00077                         MOVLW   b'01100'        ;setting display to ON
+001F   233E           00078                         CALL    ET
+                      00079 
+0020   2371           00080                         CALL    CURSOR_MOVERIGHT
+                      00081 
+0021   2362           00082                         CALL    CLEARDISPLAY
+                      00083 
+                      00084                         
+                      00085 
+0022   22B2           00086 WELCOME         CALL    charSp  ;Welcome Screen
+0023   22B2           00087                         CALL    charSp
+0024   22B2           00088                         CALL    charSp
+0025   22C1           00089                         CALL    letterM
+0026   22D5           00090                         CALL    letterA
+0027   22FD           00091                         CALL    letterZ
+0028   22CB           00092                         CALL    letterE
+0029   22B2           00093                         CALL    charSp
+002A   22F3           00094                         CALL    letterS
+002B   22E9           00095                         CALL    letterO
+002C   22DF           00096                         CALL    letterL
+002D   22B7           00097                         CALL    letterV
+002E   22CB           00098                         CALL    letterE
+002F   22BC           00099                         CALL    letterR
+                      00100 
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  3
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0034   2200           00101                         CALL    charSp
-0035   2200           00102                         CALL    charSp
-0036   2250           00103                         CALL    charStar
-0037   2214           00104                         CALL    letterD
-0038   2219           00105                         CALL    letterE
-0039   221E           00106                         CALL    letterF
-003A   2223           00107                         CALL    letterA
-003B   2228           00108                         CALL    letterU
-003C   222D           00109                         CALL    letterL
-003D   2232           00110                         CALL    letterT
-                      00111                         
-003E   2287           00112                         CALL    NEWLINE
-                      00113                         
-003F   2200           00114                         CALL    charSp
-0040   2237           00115                         CALL    letterO
-0041   223C           00116                         CALL    letterB
-0042   2241           00117                         CALL    letterS
-0043   2232           00118                         CALL    letterT
-0044   2223           00119                         CALL    letterA
-0045   2246           00120                         CALL    letterC
-0046   222D           00121                         CALL    letterL
-0047   2219           00122                         CALL    letterE
-0048   2200           00123                         CALL    charSp
-0049   2200           00124                         CALL    charSp
-004A   2200           00125                         CALL    charSp
-004B   220F           00126                         CALL    letterM
-004C   2223           00127                         CALL    letterA
-004D   224B           00128                         CALL    letterZ
-004E   2219           00129                         CALL    letterE
-                      00130 
-                      00131                         ;Initializing first timer delay
-004F   0181           00132                         CLRF    TMR0
-0050   3026           00133                         MOVLW   d'38'
-0051   008E           00134                         MOVWF   TIMER3
-                      00135 
-0052   158B           00136                         BSF             INTCON,RBIE
-0053   178B           00137                         BSF             INTCON,GIE
-                      00138 
-0054   2854           00139 MENULOOP                GOTO    MENULOOP
-                      00140 
-0055   22AA           00141 DEFAULT_START   CALL CLEARDISPLAY
-0056   22AF           00142                                 CALL    SET_BLINKING
-0057   3006           00143                                 MOVLW   b'110'
-0058   008F           00144                                 MOVWF   SELECT
-                      00145                                 
-0059   1414           00146                                 BSF d'20',0 ;obstacle
-005A   1495           00147                                 BSF d'21',1 ;empty
-005B   1496           00148                                 BSF d'22',1 ;empty
-005C   1497           00149                                 BSF d'23',1 ;empty
-005D   1498           00150                                 BSF d'24',1 ;empty
-005E   1519           00151                                 BSF d'25',2 ;S
-005F   149A           00152                                 BSF d'26',1 ;empty
-0060   149B           00153                                 BSF d'27',1 ;empty
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  4
+0030   234A           00101                         CALL    POWERUPDELAY    ; delay before clearing the display
+0031   2362           00102                         CALL    CLEARDISPLAY    ; clear display         
+                      00103 
+                      00104 
+                      00105 
+                      00106 ;----------------|
+                      00107 ;START MENU              |
+                      00108 ;----------------|
+                      00109 
+0032   22B2           00110 MENU            CALL    charSp  ;Mode Selection Menu
+0033   22B2           00111                         CALL    charSp
+0034   22B2           00112                         CALL    charSp
+0035   22B2           00113                         CALL    charSp
+0036   2302           00114                         CALL    charStar
+0037   22C6           00115                         CALL    letterD
+0038   22CB           00116                         CALL    letterE
+0039   22D0           00117                         CALL    letterF
+003A   22D5           00118                         CALL    letterA
+003B   22DA           00119                         CALL    letterU
+003C   22DF           00120                         CALL    letterL
+003D   22E4           00121                         CALL    letterT
+                      00122                         
+003E   2339           00123                         CALL    NEWLINE
+                      00124                         
+003F   22B2           00125                         CALL    charSp
+0040   22E9           00126                         CALL    letterO
+0041   22EE           00127                         CALL    letterB
+0042   22F3           00128                         CALL    letterS
+0043   22E4           00129                         CALL    letterT
+0044   22D5           00130                         CALL    letterA
+0045   22F8           00131                         CALL    letterC
+0046   22DF           00132                         CALL    letterL
+0047   22CB           00133                         CALL    letterE
+0048   22B2           00134                         CALL    charSp
+0049   22B2           00135                         CALL    charSp
+004A   22B2           00136                         CALL    charSp
+004B   22C1           00137                         CALL    letterM
+004C   22D5           00138                         CALL    letterA
+004D   22FD           00139                         CALL    letterZ
+004E   22CB           00140                         CALL    letterE
+                      00141 
+                      00142                         ;Initializing first timer delay
+004F   0181           00143                         CLRF    TMR0
+0050   3026           00144                         MOVLW   d'38'
+0051   008E           00145                         MOVWF   TIMER3
+                      00146 
+0052   158B           00147                         BSF             INTCON,RBIE
+0053   178B           00148                         BSF             INTCON,GIE
+                      00149 
+0054   2854           00150 MENULOOP                GOTO    MENULOOP
+                      00151 
+0055   2362           00152 DEFAULT_START   CALL CLEARDISPLAY
+0056   2367           00153                                 CALL    SET_BLINKING
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  4
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0061   149C           00154                                 BSF d'28',1 ;empty
-0062   149D           00155                                 BSF d'29',1 ;empty
-0063   159E           00156                                 BSF d'30',3 ;E
-0064   141F           00157                                 BSF d'31',0 ;obstacle
-0065   14A0           00158                                 BSF d'32',1 ;empty
-0066   1421           00159                                 BSF d'33',0 ;obstacle
-0067   1422           00160                                 BSF d'34',0 ;obstacle
-0068   14A3           00161                                 BSF d'35',1 ;empty
-0069   14A4           00162                                 BSF d'36',1 ;empty
-006A   14A5           00163                                 BSF d'37',1 ;empty
-006B   1426           00164                                 BSF d'38',0 ;obstacle
-006C   1427           00165                                 BSF d'39',0 ;obstacle
-                      00166                         
-                      00167 
-006D   1586           00168                                 BSF PORTB,3     ;turn on RED LED        
-006E   1106           00169                                 BCF PORTB,2 ;ground GREEN LED
-                      00170                                 
-006F   22BE           00171                                 CALL INDA
-0070   2200           00172                                 CALL charSp
-0071   2200           00173                                 CALL charSp
-0072   2200           00174                                 CALL charSp
-0073   2241           00175                                 CALL letterS
-0074   2200           00176                                 CALL charSp
-0075   225F           00177                                 CALL at
+0057   3006           00154                                 MOVLW   b'110'
+0058   008F           00155                                 MOVWF   SELECT
+                      00156                                 
+0059   1414           00157                                 BSF d'20',0 ;obstacle
+005A   1495           00158                                 BSF d'21',1 ;empty
+005B   1496           00159                                 BSF d'22',1 ;empty
+005C   1497           00160                                 BSF d'23',1 ;empty
+005D   1498           00161                                 BSF d'24',1 ;empty
+005E   1519           00162                                 BSF d'25',2 ;S
+005F   149A           00163                                 BSF d'26',1 ;empty
+0060   149B           00164                                 BSF d'27',1 ;empty
+0061   149C           00165                                 BSF d'28',1 ;empty
+0062   149D           00166                                 BSF d'29',1 ;empty
+0063   159E           00167                                 BSF d'30',3 ;E
+0064   141F           00168                                 BSF d'31',0 ;obstacle
+0065   14A0           00169                                 BSF d'32',1 ;empty
+0066   1421           00170                                 BSF d'33',0 ;obstacle
+0067   1422           00171                                 BSF d'34',0 ;obstacle
+0068   14A3           00172                                 BSF d'35',1 ;empty
+0069   14A4           00173                                 BSF d'36',1 ;empty
+006A   14A5           00174                                 BSF d'37',1 ;empty
+006B   1426           00175                                 BSF d'38',0 ;obstacle
+006C   1427           00176                                 BSF d'39',0 ;obstacle
+                      00177                         
                       00178 
-0076   2287           00179                                 CALL NEWLINE
-                      00180 
-0077   22C3           00181                                 CALL INDA1
-0078   2200           00182                                 CALL charSp
-0079   2200           00183                                 CALL charSp
-007A   2200           00184                                 CALL charSp
-007B   2269           00185                                 CALL nb0
-007C   2264           00186                                 CALL comma
-007D   2282           00187                                 CALL nb5
-                      00188 
-007E   3008           00189                                 MOVLW   b'01000' ; Set Cursor Starting Position
-007F   228C           00190                                 CALL    ET
-                      00191                 
-0080   3005           00192                                 MOVLW   b'00101' 
-0081   228C           00193                                 CALL    ET
-                      00194 
-0082   0009           00195                                 RETFIE
-                      00196 
-                      00197 
-0083   22AA           00198 OBSTACLE_START  CALL    CLEARDISPLAY
-0084   22AF           00199                                 CALL    SET_BLINKING
-0085   3004           00200                                 MOVLW   b'100'
-0086   008F           00201                                 MOVWF   SELECT
-                      00202 
-0087   1514           00203                                 BSF     d'20',2 ;S
-0088   1495           00204                                 BSF     d'21',1 ;empty
-0089   1496           00205                                 BSF     d'22',1 ;empty
-008A   1497           00206                                 BSF     d'23',1 ;empty
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  5
+006D   1586           00179                                 BSF PORTB,3     ;turn on RED LED        
+006E   1106           00180                                 BCF PORTB,2 ;ground GREEN LED
+                      00181                                 
+006F   2376           00182                                 CALL INDA
+0070   22B2           00183                                 CALL charSp
+0071   22B2           00184                                 CALL charSp
+0072   22B2           00185                                 CALL charSp
+0073   22F3           00186                                 CALL letterS
+0074   22B2           00187                                 CALL charSp
+0075   2311           00188                                 CALL at
+                      00189 
+0076   2339           00190                                 CALL NEWLINE
+                      00191 
+0077   237B           00192                                 CALL INDA1
+0078   22B2           00193                                 CALL charSp
+0079   22B2           00194                                 CALL charSp
+007A   22B2           00195                                 CALL charSp
+007B   231B           00196                                 CALL nb0
+007C   2316           00197                                 CALL comma
+007D   2334           00198                                 CALL nb5
+                      00199 
+007E   3008           00200                                 MOVLW   b'01000' ; Set Cursor Starting Position
+007F   233E           00201                                 CALL    ET
+                      00202                 
+0080   3005           00203                                 MOVLW   b'00101' 
+0081   233E           00204                                 CALL    ET
+                      00205 
+                      00206                                 
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  5
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-008B   1498           00207                                 BSF     d'24',1 ;empty
-008C   1499           00208                                 BSF     d'25',1 ;empty
-008D   149A           00209                                 BSF     d'26',1 ;empty
-008E   149B           00210                                 BSF     d'27',1 ;empty
-008F   149C           00211                                 BSF     d'28',1 ;empty
-0090   149D           00212                                 BSF     d'29',1 ;empty
-0091   149E           00213                                 BSF     d'30',1 ;empty
-0092   149F           00214                                 BSF     d'31',1 ;empty
-0093   14A0           00215                                 BSF     d'32',1 ;empty
-0094   14A1           00216                                 BSF     d'33',1 ;empty
-0095   14A2           00217                                 BSF     d'34',1 ;empty
-0096   14A3           00218                                 BSF     d'35',1 ;empty
-0097   14A4           00219                                 BSF     d'36',1 ;empty
-0098   14A5           00220                                 BSF     d'37',1 ;empty
-0099   14A6           00221                                 BSF     d'38',1 ;empty
-009A   15A7           00222                                 BSF     d'39',3 ;E
-                      00223 
-009B   1506           00224                                 BSF     PORTB,2 ;TURN ON GREEN LED
-009C   1186           00225                                 BCF     PORTB,3 ;GROUND RED LED
-                      00226 
-009D   22BE           00227                                 CALL    INDA
-009E   2200           00228                                 CALL    charSp
-009F   2200           00229                                 CALL    charSp
-00A0   2200           00230                                 CALL    charSp
-00A1   2241           00231                                 CALL    letterS
-00A2   2200           00232                                 CALL    charSp
-00A3   225F           00233                                 CALL    at
-                      00234                                 
-00A4   2287           00235                                 CALL    NEWLINE
-                      00236         
-00A5   22C3           00237                                 CALL    INDA1
-00A6   2200           00238                                 CALL    charSp
-00A7   2200           00239                                 CALL    charSp
-00A8   2200           00240                                 CALL    charSp
-00A9   2269           00241                                 CALL    nb0
-00AA   2264           00242                                 CALL    comma
-00AB   2282           00243                                 CALL    nb5
-                      00244 
-00AC   3008           00245                                 MOVLW   b'01000' ; Set Cursor Starting Position
-00AD   228C           00246                                 CALL    ET
-                      00247                 
-00AE   3001           00248                                 MOVLW   b'00001' 
-00AF   228C           00249                                 CALL    ET
-                      00250 
-00B0   3000           00251                                 MOVLW   d'0'
-00B1   0091           00252                                 MOVWF   ADDRESSING_COUNTER
-00B2   0093           00253                                 MOVWF   OBSTACLE_COUNTER                                
-                      00254 
-00B3   3015           00255                                 MOVLW   d'21'
-00B4   0092           00256                                 MOVWF   CURRENT_ADDRESS
-00B5   0084           00257                                 MOVWF   FSR
-                      00258 
-00B6   0009           00259                                 RETFIE
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  6
+0082   3019           00207                                 MOVLW   d'25'
+0083   00A8           00208                                 MOVWF   CURRENT_POSITION
+0084   00AA           00209                                 MOVWF   STARTING_POSITION
+                      00210                                 
+0085   0009           00211                                 RETFIE
+                      00212 
+                      00213 
+0086   2362           00214 OBSTACLE_START  CALL    CLEARDISPLAY
+0087   2367           00215                                 CALL    SET_BLINKING
+0088   3004           00216                                 MOVLW   b'100'
+0089   008F           00217                                 MOVWF   SELECT
+                      00218 
+008A   1514           00219                                 BSF     d'20',2 ;S
+008B   1495           00220                                 BSF     d'21',1 ;empty
+008C   1496           00221                                 BSF     d'22',1 ;empty
+008D   1497           00222                                 BSF     d'23',1 ;empty
+008E   1498           00223                                 BSF     d'24',1 ;empty
+008F   1499           00224                                 BSF     d'25',1 ;empty
+0090   149A           00225                                 BSF     d'26',1 ;empty
+0091   149B           00226                                 BSF     d'27',1 ;empty
+0092   149C           00227                                 BSF     d'28',1 ;empty
+0093   149D           00228                                 BSF     d'29',1 ;empty
+0094   149E           00229                                 BSF     d'30',1 ;empty
+0095   149F           00230                                 BSF     d'31',1 ;empty
+0096   14A0           00231                                 BSF     d'32',1 ;empty
+0097   14A1           00232                                 BSF     d'33',1 ;empty
+0098   14A2           00233                                 BSF     d'34',1 ;empty
+0099   14A3           00234                                 BSF     d'35',1 ;empty
+009A   14A4           00235                                 BSF     d'36',1 ;empty
+009B   14A5           00236                                 BSF     d'37',1 ;empty
+009C   14A6           00237                                 BSF     d'38',1 ;empty
+009D   15A7           00238                                 BSF     d'39',3 ;E
+                      00239 
+009E   1506           00240                                 BSF     PORTB,2 ;TURN ON GREEN LED
+009F   1186           00241                                 BCF     PORTB,3 ;GROUND RED LED
+                      00242 
+00A0   2376           00243                                 CALL    INDA
+00A1   22B2           00244                                 CALL    charSp
+00A2   22B2           00245                                 CALL    charSp
+00A3   22B2           00246                                 CALL    charSp
+00A4   22F3           00247                                 CALL    letterS
+00A5   22B2           00248                                 CALL    charSp
+00A6   2311           00249                                 CALL    at
+                      00250                                 
+00A7   2339           00251                                 CALL    NEWLINE
+                      00252         
+00A8   237B           00253                                 CALL    INDA1
+00A9   22B2           00254                                 CALL    charSp
+00AA   22B2           00255                                 CALL    charSp
+00AB   22B2           00256                                 CALL    charSp
+00AC   231B           00257                                 CALL    nb0
+00AD   2316           00258                                 CALL    comma
+00AE   2334           00259                                 CALL    nb5
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  6
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
                       00260 
-                      00261 
-                      00262 
-00B7   22AA           00263 MAZE_START              CALL    CLEARDISPLAY
-00B8   22AF           00264                                 CALL    SET_BLINKING
-00B9   3005           00265                                 MOVLW   b'101'
-00BA   008F           00266                                 MOVWF   SELECT
-                      00267 
-00BB   1494           00268                                 BSF     d'20',1 ;empty
-00BC   1495           00269                                 BSF     d'21',1 ;empty
-00BD   1496           00270                                 BSF     d'22',1 ;empty
-00BE   1497           00271                                 BSF     d'23',1 ;empty
-00BF   1498           00272                                 BSF     d'24',1 ;empty
-00C0   1499           00273                                 BSF     d'25',1 ;empty
-00C1   149A           00274                                 BSF     d'26',1 ;empty
-00C2   149B           00275                                 BSF     d'27',1 ;empty
-00C3   149C           00276                                 BSF     d'28',1 ;empty
-00C4   149D           00277                                 BSF     d'29',1 ;empty
-00C5   149E           00278                                 BSF     d'30',1 ;empty
-00C6   149F           00279                                 BSF     d'31',1 ;empty
-00C7   14A0           00280                                 BSF     d'32',1 ;empty
-00C8   14A1           00281                                 BSF     d'33',1 ;empty
-00C9   14A2           00282                                 BSF     d'34',1 ;empty
-00CA   14A3           00283                                 BSF     d'35',1 ;empty
-00CB   14A4           00284                                 BSF     d'36',1 ;empty
-00CC   14A5           00285                                 BSF     d'37',1 ;empty
-00CD   14A6           00286                                 BSF     d'38',1 ;empty
-00CE   14A7           00287                                 BSF     d'39',1 ;empty
-                      00288 
-00CF   1506           00289                                 BSF     PORTB,2 ;TURN ON GREEN LED
-00D0   1586           00290                                 BSF     PORTB,3 ;TURN ON RED LED
-                      00291 
-00D1   22BE           00292                                 CALL    INDA
-00D2   2200           00293                                 CALL    charSp
-00D3   2200           00294                                 CALL    charSp
-00D4   2237           00295                                 CALL    letterO
-00D5   223C           00296                                 CALL    letterB
-00D6   2241           00297                                 CALL    letterS
-                      00298 
-00D7   2287           00299                                 CALL    NEWLINE
-                      00300 
-00D8   22C3           00301                                 CALL    INDA1
-00D9   2200           00302                                 CALL    charSp
-00DA   220A           00303                                 CALL    letterR
-00DB   2219           00304                                 CALL    letterE
-00DC   220F           00305                                 CALL    letterM
-00DD   2200           00306                                 CALL    charSp
-00DE   2282           00307                                 CALL    nb5
+00AF   3008           00261                                 MOVLW   b'01000' ; Set Cursor Starting Position
+00B0   233E           00262                                 CALL    ET
+                      00263                 
+00B1   3001           00264                                 MOVLW   b'00001' 
+00B2   233E           00265                                 CALL    ET
+                      00266 
+00B3   3000           00267                                 MOVLW   d'0'
+00B4   0091           00268                                 MOVWF   ADDRESSING_COUNTER
+00B5   0093           00269                                 MOVWF   OBSTACLE_COUNTER                                
+                      00270 
+00B6   3015           00271                                 MOVLW   d'21'
+00B7   0092           00272                                 MOVWF   CURRENT_ADDRESS
+00B8   0084           00273                                 MOVWF   FSR
+                      00274 
+00B9   3014           00275                                 MOVLW   d'20'
+00BA   00A8           00276                                 MOVWF   CURRENT_POSITION
+00BB   00AA           00277                                 MOVWF   STARTING_POSITION
+                      00278 
+00BC   0009           00279                                 RETFIE
+                      00280 
+                      00281 
+                      00282 
+00BD   2362           00283 MAZE_START              CALL    CLEARDISPLAY
+00BE   2367           00284                                 CALL    SET_BLINKING
+00BF   3005           00285                                 MOVLW   b'101'
+00C0   008F           00286                                 MOVWF   SELECT
+                      00287 
+00C1   1494           00288                                 BSF     d'20',1 ;empty
+00C2   1495           00289                                 BSF     d'21',1 ;empty
+00C3   1496           00290                                 BSF     d'22',1 ;empty
+00C4   1497           00291                                 BSF     d'23',1 ;empty
+00C5   1498           00292                                 BSF     d'24',1 ;empty
+00C6   1499           00293                                 BSF     d'25',1 ;empty
+00C7   149A           00294                                 BSF     d'26',1 ;empty
+00C8   149B           00295                                 BSF     d'27',1 ;empty
+00C9   149C           00296                                 BSF     d'28',1 ;empty
+00CA   149D           00297                                 BSF     d'29',1 ;empty
+00CB   149E           00298                                 BSF     d'30',1 ;empty
+00CC   149F           00299                                 BSF     d'31',1 ;empty
+00CD   14A0           00300                                 BSF     d'32',1 ;empty
+00CE   14A1           00301                                 BSF     d'33',1 ;empty
+00CF   14A2           00302                                 BSF     d'34',1 ;empty
+00D0   14A3           00303                                 BSF     d'35',1 ;empty
+00D1   14A4           00304                                 BSF     d'36',1 ;empty
+00D2   14A5           00305                                 BSF     d'37',1 ;empty
+00D3   14A6           00306                                 BSF     d'38',1 ;empty
+00D4   14A7           00307                                 BSF     d'39',1 ;empty
                       00308 
-00DF   3008           00309                                 MOVLW   b'01000' ; Set Cursor Starting Position
-00E0   228C           00310                                 CALL    ET
-                      00311                 
-00E1   3000           00312                                 MOVLW   b'00000' 
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  7
+00D5   1506           00309                                 BSF     PORTB,2 ;TURN ON GREEN LED
+00D6   1586           00310                                 BSF     PORTB,3 ;TURN ON RED LED
+                      00311 
+00D7   2376           00312                                 CALL    INDA
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  7
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-00E2   228C           00313                                 CALL    ET
-                      00314 
-00E3   3000           00315                                 MOVLW   d'0'
-00E4   0091           00316                                 MOVWF   ADDRESSING_COUNTER
-00E5   0093           00317                                 MOVWF   OBSTACLE_COUNTER
+00D8   22B2           00313                                 CALL    charSp
+00D9   22B2           00314                                 CALL    charSp
+00DA   22E9           00315                                 CALL    letterO
+00DB   22EE           00316                                 CALL    letterB
+00DC   22F3           00317                                 CALL    letterS
                       00318 
-00E6   3000           00319                                 MOVLW   d'0'
-00E7   00B2           00320                                 MOVWF   REMAINING_NUMBER
-                      00321 
-00E8   3014           00322                                 MOVLW   d'20'
-00E9   0092           00323                                 MOVWF   CURRENT_ADDRESS
-00EA   0084           00324                                 MOVWF   FSR                             
-                      00325 
-00EB   168B           00326                                 BSF             INTCON,T0IE     ;ENABLE TIMER INTERRUPT
-                      00327 
-00EC   3032           00328                                 MOVLW   d'50'
-00ED   008E           00329                                 MOVWF   TIMER3
-00EE   0181           00330                                 CLRF    TMR0
-                      00331 
-00EF   0009           00332                                 RETFIE
-                      00333 
-                      00334 ;-------------------------|
-                      00335 ;END MAIN PROGRAM         |
-                      00336 ;-------------------------| 
-                      00337 
+00DD   2339           00319                                 CALL    NEWLINE
+                      00320 
+00DE   237B           00321                                 CALL    INDA1
+00DF   22B2           00322                                 CALL    charSp
+00E0   22BC           00323                                 CALL    letterR
+00E1   22CB           00324                                 CALL    letterE
+00E2   22C1           00325                                 CALL    letterM
+00E3   22B2           00326                                 CALL    charSp
+00E4   2334           00327                                 CALL    nb5
+                      00328 
+00E5   3008           00329                                 MOVLW   b'01000' ; Set Cursor Starting Position
+00E6   233E           00330                                 CALL    ET
+                      00331                 
+00E7   3000           00332                                 MOVLW   b'00000' 
+00E8   233E           00333                                 CALL    ET
+                      00334 
+00E9   3000           00335                                 MOVLW   d'0'
+00EA   0091           00336                                 MOVWF   ADDRESSING_COUNTER
+00EB   0093           00337                                 MOVWF   OBSTACLE_COUNTER
                       00338 
-00F0   22A4           00339 BUTTONPRESS             CALL    DEBOUNCE_DELAY  ;CALLED WHEN ANY BUTTON IS PRESSED      
-00F1   1E06           00340                                 BTFSS   PORTB, 4        ;checking if button 1 pressed
-00F2   28FA           00341                                 GOTO    MOVE_BUTTON
-00F3   1E86           00342                                 BTFSS   PORTB, 5        ;checking if button 2 pressed
-00F4   28FD           00343                                 GOTO    CONFIRM_BUTTON
-00F5   1F06           00344                                 BTFSS   PORTB, 6        ;checking if button 3 pressed
-00F6   290E           00345                                 GOTO    START_BUTTON    
-00F7   1F86           00346                                 BTFSS   PORTB, 7        ;checking if button 4 pressed
-00F8   291D           00347                                 GOTO    END_BUTTON
-00F9   292C           00348                                 GOTO    RETURN_TO_PROGRAM
-                      00349                                 
-00FA   1D0F           00350 MOVE_BUTTON             BTFSS   SELECT, 2       ; if bit 2 of select is cleared, we are in the menu
-00FB   2942           00351                                 GOTO    INCREMENT_POINTER ; used to navigate the menu
-00FC   2973           00352                                 GOTO    MOVE_CURSOR_MAZE ;to navigate the cursor around the maze
+00EC   3000           00339                                 MOVLW   d'0'
+00ED   00B2           00340                                 MOVWF   REMAINING_NUMBER
+                      00341 
+00EE   3014           00342                                 MOVLW   d'20'
+00EF   0092           00343                                 MOVWF   CURRENT_ADDRESS
+00F0   0084           00344                                 MOVWF   FSR                             
+                      00345 
+00F1   168B           00346                                 BSF             INTCON,T0IE     ;ENABLE TIMER INTERRUPT
+                      00347 
+00F2   3032           00348                                 MOVLW   d'50'
+00F3   008E           00349                                 MOVWF   TIMER3
+00F4   0181           00350                                 CLRF    TMR0
+                      00351 
+00F5   0009           00352                                 RETFIE
                       00353 
-00FD   1D0F           00354 CONFIRM_BUTTON  BTFSS   SELECT, 2       ; if bit 2 of select is cleared, we are in the menu
-00FE   2902           00355                                 GOTO    CHOOSE_MODE ; used to confirm the mode we are currently pointing
-                             at
-00FF   1C8F           00356                                 BTFSS   SELECT,1        ; SELECT = 110 --> DEFAULT MODE / ELSE --> OBSTA
-                            CLE MODE OR MAZE MODE
-0100   29B3           00357                                 GOTO    PLACE_OBSTACLECHOOSE
-0101   29FD           00358                                 GOTO    SOLVE_MAZE ; we solve the maze directly in default mode
-                      00359 
-0102   100B           00360 CHOOSE_MODE             BCF             INTCON, RBIF
-0103   1C0F           00361                                 BTFSS   SELECT,0
-0104   2907           00362                                 GOTO    S0
-0105   180F           00363                                 BTFSC   SELECT,0
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  8
+                      00354 ;-------------------------|
+                      00355 ;END MAIN PROGRAM         |
+                      00356 ;-------------------------| 
+                      00357 
+                      00358 
+00F6   235C           00359 BUTTONPRESS             CALL    DEBOUNCE_DELAY  ;CALLED WHEN ANY BUTTON IS PRESSED      
+00F7   1E06           00360                                 BTFSS   PORTB, 4        ;checking if button 1 pressed
+00F8   2900           00361                                 GOTO    MOVE_BUTTON
+00F9   1E86           00362                                 BTFSS   PORTB, 5        ;checking if button 2 pressed
+00FA   2903           00363                                 GOTO    CONFIRM_BUTTON
+00FB   1F06           00364                                 BTFSS   PORTB, 6        ;checking if button 3 pressed
+00FC   2914           00365                                 GOTO    START_BUTTON    
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  8
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0106   290B           00364                                 GOTO    S1
-0107   1C8F           00365 S0                              BTFSS   SELECT,1
-0108   28B7           00366                                 GOTO    MAZE_START
-0109   188F           00367                                 BTFSC   SELECT,1
-010A   2855           00368                                 GOTO    DEFAULT_START
-010B   1C8F           00369 S1                              BTFSS   SELECT,1
-010C   2883           00370                                 GOTO    OBSTACLE_START
-010D   292C           00371                                 GOTO    RETURN_TO_PROGRAM
-                      00372 
+00FD   1F86           00366                                 BTFSS   PORTB, 7        ;checking if button 4 pressed
+00FE   2926           00367                                 GOTO    END_BUTTON
+00FF   2935           00368                                 GOTO    RETURN_TO_PROGRAM
+                      00369                                 
+0100   1D0F           00370 MOVE_BUTTON             BTFSS   SELECT, 2       ; if bit 2 of select is cleared, we are in the menu
+0101   294E           00371                                 GOTO    INCREMENT_POINTER ; used to navigate the menu
+0102   297F           00372                                 GOTO    MOVE_CURSOR_MAZE ;to navigate the cursor around the maze
                       00373 
-010E   1D0F           00374 START_BUTTON    BTFSS   SELECT, 2
-010F   292C           00375                                 GOTO    RETURN_TO_PROGRAM
-0110   1C0F           00376                                 BTFSS   SELECT, 0
-0111   292C           00377                                 GOTO    RETURN_TO_PROGRAM
-                      00378                                 
-0112   1C80           00379                                 BTFSS   INDF,1  ;CHECK IF THE POSITION IS EMPTY
-0113   29F8           00380                                 GOTO    CANNOT_PLACE    ;IF NOT EMPTY RETURN
-                      00381 
-0114   1A13           00382                                 BTFSC   OBSTACLE_COUNTER,4      ;BIT 4 IS SET WHEN START POSITION HAS AL
-                            READY BEEN PLACED
-0115   29F8           00383                                 GOTO    CANNOT_PLACE
-                      00384 
-0116   2241           00385                                 CALL    letterS ;Print S
-0117   21EA           00386                                 CALL    RETURN_TO_PREV_POSITION
-0118   1186           00387                                 BCF     PORTB,3 ;GROUND RED LED
-0119   1613           00388                                 BSF             OBSTACLE_COUNTER,4
-011A   1500           00389                                 BSF             INDF, 2  ;SET THE ADDRESS AS CONTAINING THE STARTING POS
-                            ITION
-011B   1080           00390                                 BCF             INDF, 1 ;SET THE ADDRESS AS NOT EMPTY
-                      00391                                 
-011C   292E           00392                                 GOTO    CHECK_IF_DONE
+0103   1D0F           00374 CONFIRM_BUTTON  BTFSS   SELECT, 2       ; if bit 2 of select is cleared, we are in the menu
+0104   2908           00375                                 GOTO    CHOOSE_MODE ; used to confirm the mode we are currently pointing
+                             at
+0105   1C8F           00376                                 BTFSS   SELECT,1        ; SELECT = 110 --> DEFAULT MODE / ELSE --> OBSTA
+                            CLE MODE OR MAZE MODE
+0106   29BF           00377                                 GOTO    PLACE_OBSTACLECHOOSE
+0107   2A09           00378                                 GOTO    SOLVE_MAZE ; we solve the maze directly in default mode
+                      00379 
+0108   100B           00380 CHOOSE_MODE             BCF             INTCON, RBIF
+0109   1C0F           00381                                 BTFSS   SELECT,0
+010A   290D           00382                                 GOTO    S0
+010B   180F           00383                                 BTFSC   SELECT,0
+010C   2911           00384                                 GOTO    S1
+010D   1C8F           00385 S0                              BTFSS   SELECT,1
+010E   28BD           00386                                 GOTO    MAZE_START
+010F   188F           00387                                 BTFSC   SELECT,1
+0110   2855           00388                                 GOTO    DEFAULT_START
+0111   1C8F           00389 S1                              BTFSS   SELECT,1
+0112   2886           00390                                 GOTO    OBSTACLE_START
+0113   2935           00391                                 GOTO    RETURN_TO_PROGRAM
+                      00392 
                       00393 
-011D   1D0F           00394 END_BUTTON              BTFSS   SELECT, 2
-011E   292C           00395                                 GOTO    RETURN_TO_PROGRAM
-011F   1C0F           00396                                 BTFSS   SELECT, 0
-0120   292C           00397                                 GOTO    RETURN_TO_PROGRAM
-                      00398 
-0121   1C80           00399                                 BTFSS   INDF,1 ;CHECK IF THE POSITION IS EMPTY
-0122   29F8           00400                                 GOTO    CANNOT_PLACE ;IF NOT EMPTY RETURN
+0114   1D0F           00394 START_BUTTON    BTFSS   SELECT, 2
+0115   2935           00395                                 GOTO    RETURN_TO_PROGRAM
+0116   1C0F           00396                                 BTFSS   SELECT, 0
+0117   2935           00397                                 GOTO    RETURN_TO_PROGRAM
+                      00398                                 
+0118   1C80           00399                                 BTFSS   INDF,1  ;CHECK IF THE POSITION IS EMPTY
+0119   2A04           00400                                 GOTO    CANNOT_PLACE    ;IF NOT EMPTY RETURN
                       00401 
-0123   1A93           00402                                 BTFSC   OBSTACLE_COUNTER,5 ;BIT 5 IS SET WHEN END POSITION HAS ALREADY B
-                            EEN PLACED
-0124   29F8           00403                                 GOTO    CANNOT_PLACE
+011A   1A13           00402                                 BTFSC   OBSTACLE_COUNTER,4      ;BIT 4 IS SET WHEN START POSITION HAS AL
+                            READY BEEN PLACED
+011B   2A04           00403                                 GOTO    CANNOT_PLACE
                       00404 
-0125   2219           00405                                 CALL    letterE
-0126   21EA           00406                                 CALL    RETURN_TO_PREV_POSITION
-0127   1106           00407                                 BCF     PORTB,2 ;GROUND GREEN LED
-0128   1693           00408                                 BSF             OBSTACLE_COUNTER,5
-0129   1580           00409                                 BSF             INDF, 3 ; SET THE ADDRESS AS CONTAINING THE END POSITION
-012A   1080           00410                                 BCF             INDF, 1 ; SET THE ADDRESS AS NOT EMPTY
+011C   22F3           00405                                 CALL    letterS ;Print S
+011D   21F6           00406                                 CALL    RETURN_TO_PREV_POSITION
+011E   1186           00407                                 BCF     PORTB,3 ;GROUND RED LED
+011F   1613           00408                                 BSF             OBSTACLE_COUNTER,4
+0120   1500           00409                                 BSF             INDF, 2  ;SET THE ADDRESS AS CONTAINING THE STARTING POS
+                            ITION
+0121   1080           00410                                 BCF             INDF, 1 ;SET THE ADDRESS AS NOT EMPTY
                       00411                                 
-012B   292E           00412                                 GOTO    CHECK_IF_DONE
-                      00413         
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE  9
+0122   0804           00412                                 MOVF    FSR,0
+0123   00A8           00413                                 MOVWF   CURRENT_POSITION
+0124   00AA           00414                                 MOVWF   STARTING_POSITION
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE  9
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-012C   100B           00414 RETURN_TO_PROGRAM               BCF             INTCON, RBIF    
-012D   0009           00415                                                 RETFIE
-                      00416 
-012E   1C13           00417 CHECK_IF_DONE   BTFSS   OBSTACLE_COUNTER,0 ;CHECK IF ALL 5 OBSTACLES HAVE BEEN PLACED
-012F   292C           00418                                 GOTO    RETURN_TO_PROGRAM
-0130   1D13           00419                                 BTFSS   OBSTACLE_COUNTER,2
-0131   292C           00420                                 GOTO    RETURN_TO_PROGRAM
-0132   1E13           00421                                 BTFSS   OBSTACLE_COUNTER,4 ;CHECK IF THE START POSITION HAS BEEN PLACED
-0133   292C           00422                                 GOTO    RETURN_TO_PROGRAM
-0134   1E93           00423                                 BTFSS   OBSTACLE_COUNTER,5 ;CHECK IF THE END POSITION HAS BEEN PLACED
-0135   292C           00424                                 GOTO    RETURN_TO_PROGRAM
-0136   29FD           00425                                 GOTO    SOLVE_MAZE
-                      00426 
-                      00427 
-                      00428 ;---------------TIMER INTERRUPT CODE--------------------------------
-0137   2292           00429 timerInterrupt  CALL    POWERUPDELAY
-0138   0B8E           00430                                 DECFSZ  TIMER3,F ;decrementing timer3 to get 2s delay
-0139   2941           00431                                 GOTO    RETTIMER3
-                      00432 
-                      00433                                 ;INCREMENTING START POSITION
-013A   3032           00434                                 MOVLW   d'50'
-013B   008E           00435                                 MOVWF   TIMER3
-013C   0181           00436                                 CLRF    TMR0
-013D   1991           00437                                 BTFSC   ADDRESSING_COUNTER,3    ;IF ADDRESSING_COUNTER = 9 --> MOVE TO T
-                            HE OTHER ROW
-013E   1C11           00438                                 BTFSS   ADDRESSING_COUNTER,0
-013F   297B           00439                                 GOTO    CURSOR_INCREMENT        
-0140   299A           00440                                 GOTO    CURSOR_SWITCH_ROW               
-                      00441                                 
-0141   0009           00442 RETTIMER3       RETFIE
-                      00443 ;------------------------------------------------------------------
-                      00444 
-                      00445 
-                      00446 
-                      00447 
-                      00448 ;---------------INCREMENT POINTER CODE----------------------------
-0142   1C0F           00449 INCREMENT_POINTER       BTFSS   SELECT,0
-0143   2946           00450                                         GOTO    S00CHECKS1
-0144   180F           00451                                         BTFSC   SELECT,0
-0145   294A           00452                                         GOTO    S01CHECKS1
+                      00415                                 
+0125   2937           00416                                 GOTO    CHECK_IF_DONE
+                      00417 
+0126   1D0F           00418 END_BUTTON              BTFSS   SELECT, 2
+0127   2935           00419                                 GOTO    RETURN_TO_PROGRAM
+0128   1C0F           00420                                 BTFSS   SELECT, 0
+0129   2935           00421                                 GOTO    RETURN_TO_PROGRAM
+                      00422 
+012A   1C80           00423                                 BTFSS   INDF,1 ;CHECK IF THE POSITION IS EMPTY
+012B   2A04           00424                                 GOTO    CANNOT_PLACE ;IF NOT EMPTY RETURN
+                      00425 
+012C   1A93           00426                                 BTFSC   OBSTACLE_COUNTER,5 ;BIT 5 IS SET WHEN END POSITION HAS ALREADY B
+                            EEN PLACED
+012D   2A04           00427                                 GOTO    CANNOT_PLACE
+                      00428 
+012E   22CB           00429                                 CALL    letterE
+012F   21F6           00430                                 CALL    RETURN_TO_PREV_POSITION
+0130   1106           00431                                 BCF     PORTB,2 ;GROUND GREEN LED
+0131   1693           00432                                 BSF             OBSTACLE_COUNTER,5
+0132   1580           00433                                 BSF             INDF, 3 ; SET THE ADDRESS AS CONTAINING THE END POSITION
+0133   1080           00434                                 BCF             INDF, 1 ; SET THE ADDRESS AS NOT EMPTY
+                      00435                                 
+0134   2937           00436                                 GOTO    CHECK_IF_DONE
+                      00437         
+0135   100B           00438 RETURN_TO_PROGRAM               BCF             INTCON, RBIF    
+0136   0009           00439                                                 RETFIE
+                      00440 
+0137   1C13           00441 CHECK_IF_DONE   BTFSS   OBSTACLE_COUNTER,0 ;CHECK IF ALL 5 OBSTACLES HAVE BEEN PLACED
+0138   2935           00442                                 GOTO    RETURN_TO_PROGRAM
+0139   1D13           00443                                 BTFSS   OBSTACLE_COUNTER,2
+013A   2935           00444                                 GOTO    RETURN_TO_PROGRAM
+013B   1E13           00445                                 BTFSS   OBSTACLE_COUNTER,4 ;CHECK IF THE START POSITION HAS BEEN PLACED
+013C   2935           00446                                 GOTO    RETURN_TO_PROGRAM
+013D   1E93           00447                                 BTFSS   OBSTACLE_COUNTER,5 ;CHECK IF THE END POSITION HAS BEEN PLACED
+013E   2935           00448                                 GOTO    RETURN_TO_PROGRAM
+                      00449 
+013F   082A           00450                                 MOVF    STARTING_POSITION,0
+0140   00A8           00451                                 MOVWF   CURRENT_POSITION
+0141   229E           00452                                 CALL    MOVE_CURSOR_TO_CURRENT_POSITION
                       00453 
-0146   1C8F           00454 S00CHECKS1              BTFSS   SELECT,1
-0147   294D           00455                                 GOTO    POSITION1
-0148   188F           00456                                 BTFSC   SELECT,1
-0149   2959           00457                                 GOTO    POSITION2
-                      00458 
-014A   1C8F           00459 S01CHECKS1              BTFSS   SELECT,1
-014B   2966           00460                                 GOTO    POSITION3
-014C   292C           00461                                 GOTO    RETURN_TO_PROGRAM
-                      00462 
-                      00463 ;CLEARING CAN BE OPTIMIZED FURTHER IF NECESSARY
-014D   300C           00464 POSITION1               MOVLW   b'01100' ;4AH IS THE LOCATION
-014E   228C           00465                                 CALL    ET
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 10
+0142   2A09           00454                                 GOTO    SOLVE_MAZE
+                      00455 
+                      00456 
+                      00457 ;---------------TIMER INTERRUPT CODE--------------------------------
+0143   234A           00458 timerInterrupt  CALL    POWERUPDELAY
+0144   0B8E           00459                                 DECFSZ  TIMER3,F ;decrementing timer3 to get 2s delay
+0145   294D           00460                                 GOTO    RETTIMER3
+                      00461 
+                      00462                                 ;INCREMENTING START POSITION
+0146   3032           00463                                 MOVLW   d'50'
+0147   008E           00464                                 MOVWF   TIMER3
+0148   0181           00465                                 CLRF    TMR0
+0149   1991           00466                                 BTFSC   ADDRESSING_COUNTER,3    ;IF ADDRESSING_COUNTER = 9 --> MOVE TO T
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 10
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00466                 
-014F   300B           00467                                 MOVLW b'01011' ; 4 bits to jump address
-0150   228C           00468                                 CALL ET 
-0151   2200           00469                                 CALL    charSp
-                      00470 
-                      00471 
-0152   3008           00472                                 MOVLW b'01000' ; 00 IS THE LOCATION
-0153   228C           00473                                 CALL ET
-                      00474                 
-0154   3004           00475                                 MOVLW b'00100' ; 4 bits to jump address
-0155   228C           00476                                 CALL ET
-                      00477 
-0156   2250           00478                                 CALL    charStar;print star before DEFAULT
-0157   148F           00479                                 BSF             SELECT,1
-                      00480                                 
-0158   292C           00481                                 GOTO    RETURN_TO_PROGRAM
+                            HE OTHER ROW
+014A   1C11           00467                                 BTFSS   ADDRESSING_COUNTER,0
+014B   2987           00468                                 GOTO    CURSOR_INCREMENT        
+014C   29A6           00469                                 GOTO    CURSOR_SWITCH_ROW               
+                      00470                                 
+014D   0009           00471 RETTIMER3       RETFIE
+                      00472 ;------------------------------------------------------------------
+                      00473 
+                      00474 
+                      00475 
+                      00476 
+                      00477 ;---------------INCREMENT POINTER CODE----------------------------
+014E   1C0F           00478 INCREMENT_POINTER       BTFSS   SELECT,0
+014F   2952           00479                                         GOTO    S00CHECKS1
+0150   180F           00480                                         BTFSC   SELECT,0
+0151   2956           00481                                         GOTO    S01CHECKS1
                       00482 
-                      00483 ;CLEARING CAN BE OPTIMIZED FURTHER IF NECESSARY
-0159   3008           00484 POSITION2               MOVLW   b'01000' ; clearing position 1
-015A   228C           00485                                 CALL    ET
-                      00486                 
-015B   3004           00487                                 MOVLW   b'00100' ; 4 bits to jump address
-015C   228C           00488                                 CALL    ET
-015D   2200           00489                                 CALL    charSp          
-                      00490 
+0152   1C8F           00483 S00CHECKS1              BTFSS   SELECT,1
+0153   2959           00484                                 GOTO    POSITION1
+0154   188F           00485                                 BTFSC   SELECT,1
+0155   2965           00486                                 GOTO    POSITION2
+                      00487 
+0156   1C8F           00488 S01CHECKS1              BTFSS   SELECT,1
+0157   2972           00489                                 GOTO    POSITION3
+0158   2935           00490                                 GOTO    RETURN_TO_PROGRAM
                       00491 
-015E   300C           00492                                 MOVLW b'01100' ; 40H IS THE LOCATION
-015F   228C           00493                                 CALL ET
-                      00494                 
-0160   3000           00495                                 MOVLW b'00000' ; 4 bits to jump address
-0161   228C           00496                                 CALL ET 
-                      00497                                 
-0162   2250           00498                                 CALL    charStar;print star before OBSTACLE     
+                      00492 ;CLEARING CAN BE OPTIMIZED FURTHER IF NECESSARY
+0159   300C           00493 POSITION1               MOVLW   b'01100' ;4AH IS THE LOCATION
+015A   233E           00494                                 CALL    ET
+                      00495                 
+015B   300B           00496                                 MOVLW b'01011' ; 4 bits to jump address
+015C   233E           00497                                 CALL ET 
+015D   22B2           00498                                 CALL    charSp
                       00499 
-0163   140F           00500                                 BSF             SELECT,0
-0164   108F           00501                                 BCF             SELECT,1
-0165   292C           00502                                 GOTO    RETURN_TO_PROGRAM
-                      00503                                 
-                      00504 
-                      00505 ;CLEARING CAN BE OPTIMIZED FURTHER IF NECESSARY
-0166   300C           00506 POSITION3               MOVLW b'01100' ; clearing position 2
-0167   228C           00507                                 CALL ET
-                      00508                 
-0168   3000           00509                                 MOVLW   b'00000' ; clearing position 2
-0169   228C           00510                                 CALL    ET      
-016A   2200           00511                                 CALL    charSp
-                      00512 
-016B   300C           00513                                 MOVLW   b'01100' ;4AH IS THE LOCATION
-016C   228C           00514                                 CALL    ET
+                      00500 
+015E   3008           00501                                 MOVLW b'01000' ; 00 IS THE LOCATION
+015F   233E           00502                                 CALL ET
+                      00503                 
+0160   3004           00504                                 MOVLW b'00100' ; 4 bits to jump address
+0161   233E           00505                                 CALL ET
+                      00506 
+0162   2302           00507                                 CALL    charStar;print star before DEFAULT
+0163   148F           00508                                 BSF             SELECT,1
+                      00509                                 
+0164   2935           00510                                 GOTO    RETURN_TO_PROGRAM
+                      00511 
+                      00512 ;CLEARING CAN BE OPTIMIZED FURTHER IF NECESSARY
+0165   3008           00513 POSITION2               MOVLW   b'01000' ; clearing position 1
+0166   233E           00514                                 CALL    ET
                       00515                 
-016D   300B           00516                                 MOVLW b'01011' ; 4 bits to jump address
-016E   228C           00517                                 CALL ET 
-                      00518                                 
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 11
+0167   3004           00516                                 MOVLW   b'00100' ; 4 bits to jump address
+0168   233E           00517                                 CALL    ET
+0169   22B2           00518                                 CALL    charSp          
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 11
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-016F   2250           00519                                 CALL    charStar;print star before MAZE
-0170   100F           00520                                 BCF             SELECT,0
-0171   108F           00521                                 BCF             SELECT,1
-0172   292C           00522                                 GOTO    RETURN_TO_PROGRAM
-                      00523 
-                      00524 ;---------------MOVE CURSOR CODE----------------------------
-                      00525 
-0173   1C0F           00526 MOVE_CURSOR_MAZE        BTFSS   SELECT,0        ;SELECT = 100 --> OBSTACLE MODE / SELECT = 101 --> MAZE 
+                      00519 
+                      00520 
+016A   300C           00521                                 MOVLW b'01100' ; 40H IS THE LOCATION
+016B   233E           00522                                 CALL ET
+                      00523                 
+016C   3000           00524                                 MOVLW b'00000' ; 4 bits to jump address
+016D   233E           00525                                 CALL ET 
+                      00526                                 
+016E   2302           00527                                 CALL    charStar;print star before OBSTACLE     
+                      00528 
+016F   140F           00529                                 BSF             SELECT,0
+0170   108F           00530                                 BCF             SELECT,1
+0171   2935           00531                                 GOTO    RETURN_TO_PROGRAM
+                      00532                                 
+                      00533 
+                      00534 ;CLEARING CAN BE OPTIMIZED FURTHER IF NECESSARY
+0172   300C           00535 POSITION3               MOVLW b'01100' ; clearing position 2
+0173   233E           00536                                 CALL ET
+                      00537                 
+0174   3000           00538                                 MOVLW   b'00000' ; clearing position 2
+0175   233E           00539                                 CALL    ET      
+0176   22B2           00540                                 CALL    charSp
+                      00541 
+0177   300C           00542                                 MOVLW   b'01100' ;4AH IS THE LOCATION
+0178   233E           00543                                 CALL    ET
+                      00544                 
+0179   300B           00545                                 MOVLW b'01011' ; 4 bits to jump address
+017A   233E           00546                                 CALL ET 
+                      00547                                 
+017B   2302           00548                                 CALL    charStar;print star before MAZE
+017C   100F           00549                                 BCF             SELECT,0
+017D   108F           00550                                 BCF             SELECT,1
+017E   2935           00551                                 GOTO    RETURN_TO_PROGRAM
+                      00552 
+                      00553 ;---------------MOVE CURSOR CODE----------------------------
+                      00554 
+017F   1C0F           00555 MOVE_CURSOR_MAZE        BTFSS   SELECT,0        ;SELECT = 100 --> OBSTACLE MODE / SELECT = 101 --> MAZE 
                             MODE
-0174   2976           00527                                         GOTO    MOVE_CURSOR_OBSTACLE
-0175   292C           00528                                         GOTO    RETURN_TO_PROGRAM
-                      00529                                         ;GOTO   MOVE_CURSOR_MAZEMODE
-                      00530 
-0176   1D91           00531 MOVE_CURSOR_OBSTACLE    BTFSS   ADDRESSING_COUNTER, 3
-0177   297B           00532                                                 GOTO    CURSOR_INCREMENT
-0178   1A11           00533                                                 BTFSC   ADDRESSING_COUNTER, 4
-0179   29FD           00534                                                 GOTO    SOLVE_MAZE
-017A   298F           00535                                                 GOTO    CURSOR_NEXTLINE
-                      00536 
-017B   1800           00537 CURSOR_INCREMENT                BTFSC INDF,0
-017C   2255           00538                                                 CALL rectangle
-017D   1880           00539                                                 BTFSC INDF,1
-017E   225A           00540                                                 CALL empty
-017F   1900           00541                                                 BTFSC INDF,2
-0180   2241           00542                                                 CALL letterS
-0181   1980           00543                                                 BTFSC INDF,3
-0182   2219           00544                                                 CALL letterE    
-0183   1E11           00545                                                 BTFSS   ADDRESSING_COUNTER, 4 ;IF BIT4 OF ADDRESSING COU
+0180   2982           00556                                         GOTO    MOVE_CURSOR_OBSTACLE
+0181   2935           00557                                         GOTO    RETURN_TO_PROGRAM
+                      00558                                         ;GOTO   MOVE_CURSOR_MAZEMODE
+                      00559 
+0182   1D91           00560 MOVE_CURSOR_OBSTACLE    BTFSS   ADDRESSING_COUNTER, 3
+0183   2987           00561                                                 GOTO    CURSOR_INCREMENT
+0184   1A11           00562                                                 BTFSC   ADDRESSING_COUNTER, 4
+0185   2A09           00563                                                 GOTO    SOLVE_MAZE
+0186   299B           00564                                                 GOTO    CURSOR_NEXTLINE
+                      00565 
+0187   1800           00566 CURSOR_INCREMENT                BTFSC INDF,0
+0188   2307           00567                                                 CALL rectangle
+0189   1880           00568                                                 BTFSC INDF,1
+018A   230C           00569                                                 CALL empty
+018B   1900           00570                                                 BTFSC INDF,2
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 12
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+018C   22F3           00571                                                 CALL letterS
+018D   1980           00572                                                 BTFSC INDF,3
+018E   22CB           00573                                                 CALL letterE    
+018F   1E11           00574                                                 BTFSS   ADDRESSING_COUNTER, 4 ;IF BIT4 OF ADDRESSING COU
                             NTER IS SET, WE ARE IN THE SECOND LINE AND MOVING BACKWARDS
-0184   2189           00546                                                 CALL    INCREMENT               ;MOVE TO THE RIGHT      
+0190   2195           00575                                                 CALL    INCREMENT               ;MOVE TO THE RIGHT      
                                                     
-0185   1A11           00547                                                 BTFSC   ADDRESSING_COUNTER, 4
-0186   218C           00548                                                 CALL    DECREMENT               ;MOVE TO THE LEFT       
+0191   1A11           00576                                                 BTFSC   ADDRESSING_COUNTER, 4
+0192   2198           00577                                                 CALL    DECREMENT               ;MOVE TO THE LEFT       
                                     
 Message[305]: Using default destination of 1 (file).
-0187   0A91           00549                                                 INCF    ADDRESSING_COUNTER
-0188   292C           00550                                                 GOTO    RETURN_TO_PROGRAM
-                      00551 
+0193   0A91           00578                                                 INCF    ADDRESSING_COUNTER
+0194   2935           00579                                                 GOTO    RETURN_TO_PROGRAM
+                      00580 
 Message[305]: Using default destination of 1 (file).
-0189   0A92           00552 INCREMENT                               INCF    CURRENT_ADDRESS
+0195   0A92           00581 INCREMENT                               INCF    CURRENT_ADDRESS
 Message[305]: Using default destination of 1 (file).
-018A   0A84           00553                                                 INCF    FSR
-018B   0008           00554                                                 RETURN
-                      00555 
+0196   0A84           00582                                                 INCF    FSR
+0197   0008           00583                                                 RETURN
+                      00584 
 Message[305]: Using default destination of 1 (file).
-018C   0392           00556 DECREMENT                               DECF    CURRENT_ADDRESS
+0198   0392           00585 DECREMENT                               DECF    CURRENT_ADDRESS
 Message[305]: Using default destination of 1 (file).
-018D   0384           00557                                                 DECF    FSR
-018E   0008           00558                                                 RETURN
-                      00559 
-018F   300C           00560 CURSOR_NEXTLINE                 MOVLW   b'01100' ;move to ROW1 COLUMN 8
-0190   228C           00561                                                 CALL    ET
-0191   3008           00562                                                 MOVLW   b'01000'
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 12
-Maze Solver
-
-LOC  OBJECT CODE     LINE SOURCE TEXT
-  VALUE
-
-0192   228C           00563                                                 CALL    ET
-0193   22B4           00564                                                 CALL    CURSOR_MOVELEFT
-0194   3010           00565                                                 MOVLW   b'10000'
-0195   0091           00566                                                 MOVWF   ADDRESSING_COUNTER
-0196   3026           00567                                                 MOVLW   d'38'
-0197   0092           00568                                                 MOVWF   CURRENT_ADDRESS
-0198   0084           00569                                                 MOVWF   FSR
-0199   292C           00570                                                 GOTO    RETURN_TO_PROGRAM
-                      00571 
-019A   1A11           00572 CURSOR_SWITCH_ROW               BTFSC   ADDRESSING_COUNTER,4
-019B   29A8           00573                                                 GOTO    SWITCH_UP
-019C   299D           00574                                                 GOTO    SWITCH_DOWN
-                      00575 
-019D   300C           00576 SWITCH_DOWN                             MOVLW   b'01100' ; move to ROW1 COLUMN 9
-019E   228C           00577                                                 CALL    ET
-019F   3009           00578                                                 MOVLW   b'01001'
-01A0   228C           00579                                                 CALL    ET
-01A1   22B4           00580                                                 CALL    CURSOR_MOVELEFT
-01A2   3010           00581                                                 MOVLW   b'10000'
-01A3   0091           00582                                                 MOVWF   ADDRESSING_COUNTER
-01A4   3027           00583                                                 MOVLW   d'39'
-01A5   0092           00584                                                 MOVWF   CURRENT_ADDRESS
-01A6   0084           00585                                                 MOVWF   FSR             ;ADJUST FSR
-01A7   292C           00586                                                 GOTO    RETURN_TO_PROGRAM
-                      00587 
-01A8   3008           00588 SWITCH_UP                               MOVLW   b'01000' ;move to ROW0 COLUMN 0
-01A9   228C           00589                                                 CALL    ET
-01AA   3000           00590                                                 MOVLW   b'00000'
-01AB   228C           00591                                                 CALL    ET
-01AC   22B9           00592                                                 CALL    CURSOR_MOVERIGHT
-01AD   3000           00593                                                 MOVLW   b'00000'
-01AE   0091           00594                                                 MOVWF   ADDRESSING_COUNTER
-01AF   3014           00595                                                 MOVLW   d'20'
-01B0   0092           00596                                                 MOVWF   CURRENT_ADDRESS
-01B1   0084           00597                                                 MOVWF   FSR
-01B2   292C           00598                                                 GOTO    RETURN_TO_PROGRAM
-                      00599 
-                      00600 ;MOVE_CURSOR_MAZEMODE
-                      00601 ;-----------------------------------------------------------------------------  
-                      00602 
-                      00603 ;---------------PLACE OBSTACLES CODE----------------------------
+0199   0384           00586                                                 DECF    FSR
+019A   0008           00587                                                 RETURN
+                      00588 
+019B   300C           00589 CURSOR_NEXTLINE                 MOVLW   b'01100' ;move to ROW1 COLUMN 8
+019C   233E           00590                                                 CALL    ET
+019D   3008           00591                                                 MOVLW   b'01000'
+019E   233E           00592                                                 CALL    ET
+019F   236C           00593                                                 CALL    CURSOR_MOVELEFT
+01A0   3010           00594                                                 MOVLW   b'10000'
+01A1   0091           00595                                                 MOVWF   ADDRESSING_COUNTER
+01A2   3026           00596                                                 MOVLW   d'38'
+01A3   0092           00597                                                 MOVWF   CURRENT_ADDRESS
+01A4   0084           00598                                                 MOVWF   FSR
+01A5   2935           00599                                                 GOTO    RETURN_TO_PROGRAM
+                      00600 
+01A6   1A11           00601 CURSOR_SWITCH_ROW               BTFSC   ADDRESSING_COUNTER,4
+01A7   29B4           00602                                                 GOTO    SWITCH_UP
+01A8   29A9           00603                                                 GOTO    SWITCH_DOWN
                       00604 
-01B3   1C0F           00605 PLACE_OBSTACLECHOOSE    BTFSS   SELECT,0        ;SELECT = 100 --> OBSTACLE MODE / SELECT = 101 --> MAZE 
-                            MODE
-01B4   29B6           00606                                                 GOTO    PLACE_OBSTACLEMODE
-01B5   29C7           00607                                                 GOTO    PLACE_MAZEMODE
-                      00608 
-01B6   21F9           00609 PLACE_OBSTACLEMODE      CALL    PLACE_OBSTACLE  ;PLACE OBSTACLE IN CURRENT POSITION
-                      00610                                         ;BUZZ SOUND
-Message[305]: Using default destination of 1 (file).
-01B7   0A93           00611                                         INCF    OBSTACLE_COUNTER        ;ADJUST NUMBER OF PLACED OBSTACL
-                            ES                                                                      
-01B8   1913           00612                                         BTFSC   OBSTACLE_COUNTER,2 ;CHECK IF 5 OBSTACLES HAVE BEEN PLACE
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 13
+01A9   300C           00605 SWITCH_DOWN                             MOVLW   b'01100' ; move to ROW1 COLUMN 9
+01AA   233E           00606                                                 CALL    ET
+01AB   3009           00607                                                 MOVLW   b'01001'
+01AC   233E           00608                                                 CALL    ET
+01AD   236C           00609                                                 CALL    CURSOR_MOVELEFT
+01AE   3010           00610                                                 MOVLW   b'10000'
+01AF   0091           00611                                                 MOVWF   ADDRESSING_COUNTER
+01B0   3027           00612                                                 MOVLW   d'39'
+01B1   0092           00613                                                 MOVWF   CURRENT_ADDRESS
+01B2   0084           00614                                                 MOVWF   FSR             ;ADJUST FSR
+01B3   2935           00615                                                 GOTO    RETURN_TO_PROGRAM
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 13
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                            D
-01B9   1C13           00613                                         BTFSS   OBSTACLE_COUNTER,0
-01BA   29BC           00614                                         GOTO    ADJUST_NEXT_POSITION ; ADJUST CURSOR TO KEEP PLACING OBS
-                            TACLES
-01BB   29FD           00615                                         GOTO    SOLVE_MAZE      ;IF WE HAVE PLACE 5 OBSTACLES WE SOLVE T
-                            HE MAZE
                       00616 
-01BC   1D91           00617 ADJUST_NEXT_POSITION            BTFSS   ADDRESSING_COUNTER, 3   ; IF IT IS SET, WE ARE ON ROW0 COLUMN9, 
-                            OR ROW1 COLUMN0
-01BD   29C1           00618                                                         GOTO    INCREMENT_NEXT_POSITION 
-01BE   1A11           00619                                                         BTFSC   ADDRESSING_COUNTER, 4   ; IF IT IS SET, 
-                            WE ARE ON ROW1 COLUMN0, ELSE WE ARE ON ROW0 COLUMN9
-01BF   29FD           00620                                                         GOTO    SOLVE_MAZE
-01C0   298F           00621                                                         GOTO    CURSOR_NEXTLINE
-                      00622                                                         
-01C1   1E11           00623 INCREMENT_NEXT_POSITION         BTFSS   ADDRESSING_COUNTER, 4 ;IF BIT4 OF ADDRESSING COUNTER IS SET, WE 
-                            ARE IN ROW1 AND NEED TO MOVE BACKWARDS
-01C2   2189           00624                                                         CALL    INCREMENT                 
-01C3   1A11           00625                                                         BTFSC   ADDRESSING_COUNTER, 4
-01C4   218C           00626                                                         CALL    DECREMENT
-Message[305]: Using default destination of 1 (file).
-01C5   0A91           00627                                                         INCF    ADDRESSING_COUNTER
-01C6   292C           00628                                                         GOTO    RETURN_TO_PROGRAM
-                      00629 
-                      00630 
-01C7   1C80           00631 PLACE_MAZEMODE          BTFSS   INDF,1  ;CHECK IF THE POSITION IS EMPTY
-01C8   29F8           00632                                         GOTO    CANNOT_PLACE    ;IF NOT EMPTY RETURN
-01C9   1913           00633                                         BTFSC   OBSTACLE_COUNTER,2 ;CHECK IF 5 OBSTACLES HAVE BEEN PLACE
-                            D
-01CA   1C13           00634                                         BTFSS   OBSTACLE_COUNTER,0
-01CB   29CD           00635                                         GOTO    PLACE_OBS_MAZEMODE
-01CC   29F8           00636                                         GOTO    CANNOT_PLACE    
+01B4   3008           00617 SWITCH_UP                               MOVLW   b'01000' ;move to ROW0 COLUMN 0
+01B5   233E           00618                                                 CALL    ET
+01B6   3000           00619                                                 MOVLW   b'00000'
+01B7   233E           00620                                                 CALL    ET
+01B8   2371           00621                                                 CALL    CURSOR_MOVERIGHT
+01B9   3000           00622                                                 MOVLW   b'00000'
+01BA   0091           00623                                                 MOVWF   ADDRESSING_COUNTER
+01BB   3014           00624                                                 MOVLW   d'20'
+01BC   0092           00625                                                 MOVWF   CURRENT_ADDRESS
+01BD   0084           00626                                                 MOVWF   FSR
+01BE   2935           00627                                                 GOTO    RETURN_TO_PROGRAM
+                      00628 
+                      00629 ;MOVE_CURSOR_MAZEMODE
+                      00630 ;-----------------------------------------------------------------------------  
+                      00631 
+                      00632 ;---------------PLACE OBSTACLES CODE----------------------------
+                      00633 
+01BF   1C0F           00634 PLACE_OBSTACLECHOOSE    BTFSS   SELECT,0        ;SELECT = 100 --> OBSTACLE MODE / SELECT = 101 --> MAZE 
+                            MODE
+01C0   29C2           00635                                                 GOTO    PLACE_OBSTACLEMODE
+01C1   29D3           00636                                                 GOTO    PLACE_MAZEMODE
                       00637 
-01CD   21F9           00638 PLACE_OBS_MAZEMODE      CALL    PLACE_OBSTACLE
+01C2   2205           00638 PLACE_OBSTACLEMODE      CALL    PLACE_OBSTACLE  ;PLACE OBSTACLE IN CURRENT POSITION
+                      00639                                         ;BUZZ SOUND
 Message[305]: Using default destination of 1 (file).
-01CE   0A93           00639                                         INCF    OBSTACLE_COUNTER        ;INCREMENT OBSTACLE COUNTER
-                      00640                                         ;ADJUST REMAINING:
-                      00641                                         ; MOVE TO THE REMAINING NB OF OBSTACLES POSITION
-01CF   300C           00642                                         MOVLW   b'01100'
-01D0   228C           00643                                         CALL    ET
-01D1   300F           00644                                         MOVLW   b'01111'
-01D2   228C           00645                                         CALL    ET
-                      00646                                         ;WRITE NUMBER
-                      00647 
-01D3   1DB2           00648                                         BTFSS   REMAINING_NUMBER,3
-01D4   29D8           00649                                         GOTO    REMAINING_CASE1
-01D5   2269           00650                                         CALL    nb0
-01D6   21EA           00651                                         CALL    RETURN_TO_PREV_POSITION
-01D7   29F6           00652                                         GOTO    PLACE_MAZEMODE_RETURN
-                      00653 
-01D8   1D32           00654 REMAINING_CASE1         BTFSS   REMAINING_NUMBER,2
-01D9   29DD           00655                                         GOTO    REMAINING_CASE2
-01DA   226E           00656                                         CALL    nb1
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 14
+01C3   0A93           00640                                         INCF    OBSTACLE_COUNTER        ;ADJUST NUMBER OF PLACED OBSTACL
+                            ES                                                                      
+01C4   1913           00641                                         BTFSC   OBSTACLE_COUNTER,2 ;CHECK IF 5 OBSTACLES HAVE BEEN PLACE
+                            D
+01C5   1C13           00642                                         BTFSS   OBSTACLE_COUNTER,0
+01C6   29C8           00643                                         GOTO    ADJUST_NEXT_POSITION ; ADJUST CURSOR TO KEEP PLACING OBS
+                            TACLES
+01C7   2A09           00644                                         GOTO    SOLVE_MAZE      ;IF WE HAVE PLACE 5 OBSTACLES WE SOLVE T
+                            HE MAZE
+                      00645 
+01C8   1D91           00646 ADJUST_NEXT_POSITION            BTFSS   ADDRESSING_COUNTER, 3   ; IF IT IS SET, WE ARE ON ROW0 COLUMN9, 
+                            OR ROW1 COLUMN0
+01C9   29CD           00647                                                         GOTO    INCREMENT_NEXT_POSITION 
+01CA   1A11           00648                                                         BTFSC   ADDRESSING_COUNTER, 4   ; IF IT IS SET, 
+                            WE ARE ON ROW1 COLUMN0, ELSE WE ARE ON ROW0 COLUMN9
+01CB   2A09           00649                                                         GOTO    SOLVE_MAZE
+01CC   299B           00650                                                         GOTO    CURSOR_NEXTLINE
+                      00651                                                         
+01CD   1E11           00652 INCREMENT_NEXT_POSITION         BTFSS   ADDRESSING_COUNTER, 4 ;IF BIT4 OF ADDRESSING COUNTER IS SET, WE 
+                            ARE IN ROW1 AND NEED TO MOVE BACKWARDS
+01CE   2195           00653                                                         CALL    INCREMENT                 
+01CF   1A11           00654                                                         BTFSC   ADDRESSING_COUNTER, 4
+01D0   2198           00655                                                         CALL    DECREMENT
+Message[305]: Using default destination of 1 (file).
+01D1   0A91           00656                                                         INCF    ADDRESSING_COUNTER
+01D2   2935           00657                                                         GOTO    RETURN_TO_PROGRAM
+                      00658 
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 14
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-01DB   21EA           00657                                         CALL    RETURN_TO_PREV_POSITION
-01DC   29F6           00658                                         GOTO    PLACE_MAZEMODE_RETURN
                       00659 
-01DD   1CB2           00660 REMAINING_CASE2         BTFSS   REMAINING_NUMBER,1
-01DE   29E2           00661                                         GOTO    REMAINING_CASE3
-01DF   2273           00662                                         CALL    nb2
-01E0   21EA           00663                                         CALL    RETURN_TO_PREV_POSITION
-01E1   29F6           00664                                         GOTO    PLACE_MAZEMODE_RETURN
-                      00665 
-01E2   1C32           00666 REMAINING_CASE3         BTFSS   REMAINING_NUMBER,0
-01E3   29E7           00667                                         GOTO    REMAINING_CASE4
-01E4   2278           00668                                         CALL    nb3
-01E5   21EA           00669                                         CALL    RETURN_TO_PREV_POSITION
-01E6   29F6           00670                                         GOTO    PLACE_MAZEMODE_RETURN
-                      00671 
-01E7   227D           00672 REMAINING_CASE4         CALL    nb4
-01E8   21EA           00673                                         CALL    RETURN_TO_PREV_POSITION
-01E9   29F6           00674                                         GOTO    PLACE_MAZEMODE_RETURN
-                      00675 
-                      00676                                         ;RETURN TO PREVIOUS POSITION
-01EA   1E11           00677 RETURN_TO_PREV_POSITION         BTFSS   ADDRESSING_COUNTER, 4 ;IF BIT4 = 1 --> WE ARE IN ROW 1, ELSE WE 
-                            ARE IN ROW 0
-01EB   3008           00678                                                         MOVLW   b'01000'          
-01EC   1A11           00679                                                         BTFSC   ADDRESSING_COUNTER, 4
-01ED   300C           00680                                                         MOVLW   b'01100'
-01EE   228C           00681                                                         CALL    ET
-01EF   1E11           00682                                                         BTFSS   ADDRESSING_COUNTER, 4
-01F0   3014           00683                                                         MOVLW   d'20'   ;ROW 0 : D'20' to d'29'
-01F1   1A11           00684                                                         BTFSC   ADDRESSING_COUNTER, 4
-01F2   301E           00685                                                         MOVLW   d'30'   ;ROW 1 : d'30' to d'39'
-01F3   0204           00686                                                         SUBWF   FSR,0   ; ADDRESS REGISTER - VALUE IN W 
-                            = OFFSET
-01F4   228C           00687                                                         CALL    ET      
-01F5   0008           00688                                                         RETURN                                  
-                      00689 
-01F6   0DB2           00690 PLACE_MAZEMODE_RETURN           RLF             REMAINING_NUMBER,1 ;ROTATE IT ONCE TO THE LEFT TO SELECT
-                             CORRECT CASE FOR REMAINING NUMBER
-01F7   292E           00691                                                         GOTO    CHECK_IF_DONE
-                      00692 
-01F8                  00693 CANNOT_PLACE            ;BUZZ SOUND
-01F8   292C           00694                                         GOTO    RETURN_TO_PROGRAM
-                      00695 
-                      00696 
-01F9   1400           00697 PLACE_OBSTACLE          BSF             INDF, 0 ;SET THE ADDRESS AS CONTAINING AN OBSTACLE
-01FA   1080           00698                                         BCF             INDF, 1 ;SET THE ADDRESS AS NOT EMPTY
-01FB   2255           00699                                         CALL    rectangle
-01FC   0008           00700                                         RETURN
-                      00701 
-                      00702 
-                      00703 ;---------------MAZE SOLVING ALGORITHM----------------------------
+01D3   1C80           00660 PLACE_MAZEMODE          BTFSS   INDF,1  ;CHECK IF THE POSITION IS EMPTY
+01D4   2A04           00661                                         GOTO    CANNOT_PLACE    ;IF NOT EMPTY RETURN
+01D5   1913           00662                                         BTFSC   OBSTACLE_COUNTER,2 ;CHECK IF 5 OBSTACLES HAVE BEEN PLACE
+                            D
+01D6   1C13           00663                                         BTFSS   OBSTACLE_COUNTER,0
+01D7   29D9           00664                                         GOTO    PLACE_OBS_MAZEMODE
+01D8   2A04           00665                                         GOTO    CANNOT_PLACE    
+                      00666 
+01D9   2205           00667 PLACE_OBS_MAZEMODE      CALL    PLACE_OBSTACLE
+Message[305]: Using default destination of 1 (file).
+01DA   0A93           00668                                         INCF    OBSTACLE_COUNTER        ;INCREMENT OBSTACLE COUNTER
+                      00669                                         ;ADJUST REMAINING:
+                      00670                                         ; MOVE TO THE REMAINING NB OF OBSTACLES POSITION
+01DB   300C           00671                                         MOVLW   b'01100'
+01DC   233E           00672                                         CALL    ET
+01DD   300F           00673                                         MOVLW   b'01111'
+01DE   233E           00674                                         CALL    ET
+                      00675                                         ;WRITE NUMBER
+                      00676 
+01DF   1DB2           00677                                         BTFSS   REMAINING_NUMBER,3
+01E0   29E4           00678                                         GOTO    REMAINING_CASE1
+01E1   231B           00679                                         CALL    nb0
+01E2   21F6           00680                                         CALL    RETURN_TO_PREV_POSITION
+01E3   2A02           00681                                         GOTO    PLACE_MAZEMODE_RETURN
+                      00682 
+01E4   1D32           00683 REMAINING_CASE1         BTFSS   REMAINING_NUMBER,2
+01E5   29E9           00684                                         GOTO    REMAINING_CASE2
+01E6   2320           00685                                         CALL    nb1
+01E7   21F6           00686                                         CALL    RETURN_TO_PREV_POSITION
+01E8   2A02           00687                                         GOTO    PLACE_MAZEMODE_RETURN
+                      00688 
+01E9   1CB2           00689 REMAINING_CASE2         BTFSS   REMAINING_NUMBER,1
+01EA   29EE           00690                                         GOTO    REMAINING_CASE3
+01EB   2325           00691                                         CALL    nb2
+01EC   21F6           00692                                         CALL    RETURN_TO_PREV_POSITION
+01ED   2A02           00693                                         GOTO    PLACE_MAZEMODE_RETURN
+                      00694 
+01EE   1C32           00695 REMAINING_CASE3         BTFSS   REMAINING_NUMBER,0
+01EF   29F3           00696                                         GOTO    REMAINING_CASE4
+01F0   232A           00697                                         CALL    nb3
+01F1   21F6           00698                                         CALL    RETURN_TO_PREV_POSITION
+01F2   2A02           00699                                         GOTO    PLACE_MAZEMODE_RETURN
+                      00700 
+01F3   232F           00701 REMAINING_CASE4         CALL    nb4
+01F4   21F6           00702                                         CALL    RETURN_TO_PREV_POSITION
+01F5   2A02           00703                                         GOTO    PLACE_MAZEMODE_RETURN
                       00704 
-01FD   22AA           00705 SOLVE_MAZE              CALL    CLEARDISPLAY
-01FE   100B           00706                                 BCF             INTCON,RBIF
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 15
+                      00705                                         ;RETURN TO PREVIOUS POSITION
+01F6   1E11           00706 RETURN_TO_PREV_POSITION         BTFSS   ADDRESSING_COUNTER, 4 ;IF BIT4 = 1 --> WE ARE IN ROW 1, ELSE WE 
+                            ARE IN ROW 0
+01F7   3008           00707                                                         MOVLW   b'01000'          
+01F8   1A11           00708                                                         BTFSC   ADDRESSING_COUNTER, 4
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 15
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-01FF   2822           00707                                 GOTO    WELCOME
-                      00708 
-                      00709 ;-----------------------------------------------------------------------------
-                      00710 ;------CHARACTER DECLARATIONS---------
-                      00711 
-0200   3012           00712 charSp  MOVLW b'10010' ;upper bits of Space character
-0201   228C           00713                 CALL ET
-0202   3010           00714                 MOVLW b'10000' ;lower bits of Space character
-0203   228C           00715                 CALL ET 
-0204   0008           00716                 RETURN          
-0205   3015           00717 letterV MOVLW b'10101' ;upper bits of V
-0206   228C           00718                 CALL ET
-0207   3016           00719                 MOVLW b'10110' ;lower bits of V
-0208   228C           00720                 CALL ET  
-0209   0008           00721                 RETURN
-020A   3015           00722 letterR MOVLW b'10101' ;upper bits of R
-020B   228C           00723                 CALL ET
-020C   3012           00724                 MOVLW b'10010' ;lower bits of R
-020D   228C           00725                 CALL ET  
-020E   0008           00726                 RETURN
-020F   3014           00727 letterM MOVLW b'10100' ;upper bits of M
-0210   228C           00728                 CALL ET
-0211   301D           00729                 MOVLW b'11101' ;lower bits of M
-0212   228C           00730                 CALL ET 
-0213   0008           00731                 RETURN
-0214   3014           00732 letterD MOVLW b'10100' ;upper bits of D
-0215   228C           00733                 CALL ET
-0216   3014           00734                 MOVLW b'10100' ;lower bits of D
-0217   228C           00735                 CALL ET 
-0218   0008           00736                 RETURN
-0219   3014           00737 letterE MOVLW b'10100' ;upper bits of E
-021A   228C           00738                 CALL ET
-021B   3015           00739                 MOVLW b'10101' ;lower bits of E
-021C   228C           00740                 CALL ET 
-021D   0008           00741                 RETURN
-021E   3014           00742 letterF MOVLW b'10100' ;upper bits of F
-021F   228C           00743                 CALL ET
-0220   3016           00744                 MOVLW b'10110' ;lower bits of D
-0221   228C           00745                 CALL ET 
-0222   0008           00746                 RETURN
-0223   3014           00747 letterA MOVLW b'10100' ;upper bits of A
-0224   228C           00748                 CALL ET
-0225   3011           00749                 MOVLW b'10001' ;lower bits of A
-0226   228C           00750                 CALL ET 
-0227   0008           00751                 RETURN
-0228   3015           00752 letterU MOVLW b'10101' ;upper bits of U
-0229   228C           00753                 CALL ET
-022A   3015           00754                 MOVLW b'10101' ;lower bits of U
-022B   228C           00755                 CALL ET 
-022C   0008           00756                 RETURN
-022D   3014           00757 letterL MOVLW b'10100' ;upper bits of L
-022E   228C           00758                 CALL ET
-022F   301C           00759                 MOVLW b'11100' ;lower bits of L
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 16
+01F9   300C           00709                                                         MOVLW   b'01100'
+01FA   233E           00710                                                         CALL    ET
+01FB   1E11           00711                                                         BTFSS   ADDRESSING_COUNTER, 4
+01FC   3014           00712                                                         MOVLW   d'20'   ;ROW 0 : D'20' to d'29'
+01FD   1A11           00713                                                         BTFSC   ADDRESSING_COUNTER, 4
+01FE   301E           00714                                                         MOVLW   d'30'   ;ROW 1 : d'30' to d'39'
+01FF   0204           00715                                                         SUBWF   FSR,0   ; ADDRESS REGISTER - VALUE IN W 
+                            = OFFSET
+0200   233E           00716                                                         CALL    ET      
+0201   0008           00717                                                         RETURN                                  
+                      00718 
+0202   0DB2           00719 PLACE_MAZEMODE_RETURN           RLF             REMAINING_NUMBER,1 ;ROTATE IT ONCE TO THE LEFT TO SELECT
+                             CORRECT CASE FOR REMAINING NUMBER
+0203   2937           00720                                                         GOTO    CHECK_IF_DONE
+                      00721 
+0204                  00722 CANNOT_PLACE            ;BUZZ SOUND
+0204   2935           00723                                         GOTO    RETURN_TO_PROGRAM
+                      00724 
+                      00725 
+0205   1400           00726 PLACE_OBSTACLE          BSF             INDF, 0 ;SET THE ADDRESS AS CONTAINING AN OBSTACLE
+0206   1080           00727                                         BCF             INDF, 1 ;SET THE ADDRESS AS NOT EMPTY
+0207   2307           00728                                         CALL    rectangle
+0208   0008           00729                                         RETURN
+                      00730 
+                      00731 
+                      00732 ;---------------MAZE SOLVING ALGORITHM----------------------------
+                      00733 
+0209   229E           00734 SOLVE_MAZE              CALL    MOVE_CURSOR_TO_CURRENT_POSITION
+020A   2344           00735                                 CALL    LONGDELAY
+                      00736 
+020B   3001           00737 CHECK_RIGHT                     MOVLW   b'0001'
+020C   00AB           00738                                         MOVWF   PREVIOUS_COMMAND
+                      00739 
+                      00740                                         ;-------------CHECKING BOUNDS----------------
+                      00741 
+                      00742                                         ;TOP RIGHT
+020D   301D           00743                                         MOVLW   d'29'
+020E   0228           00744                                         SUBWF   CURRENT_POSITION, 0
+                      00745 
+                      00746                                         ;IF EQUAL GOTO CHECK LEFT
+020F   1903           00747                                         BTFSC   STATUS, Z
+0210   2A1F           00748                                         GOTO    CHECK_LEFT
+                      00749                                         
+                      00750                                         ;BOT RIGHT
+0211   3027           00751                                         MOVLW   d'39'
+0212   0228           00752                                         SUBWF   CURRENT_POSITION, 0                                     
+                      00753 
+                      00754                                         ;IF EQUAL GOTO CHECK LEFT
+0213   1903           00755                                         BTFSC   STATUS, Z
+0214   2A1F           00756                                         GOTO    CHECK_LEFT                                      
+                      00757                                         ;--------------------------------------------
+                      00758 
+0215   2371           00759                                         CALL    CURSOR_MOVERIGHT        ;SETTING CURSOR MOVING DIRECTION
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 16
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0230   228C           00760                 CALL ET 
-0231   0008           00761                 RETURN
-0232   3015           00762 letterT MOVLW b'10101' ;upper bits of T
-0233   228C           00763                 CALL ET
-0234   3014           00764                 MOVLW b'10100' ;lower bits of T
-0235   228C           00765                 CALL ET 
-0236   0008           00766                 RETURN
-0237   3014           00767 letterO MOVLW b'10100' ;upper bits of O
-0238   228C           00768                 CALL ET
-0239   301F           00769                 MOVLW b'11111' ;lower bits of O
-023A   228C           00770                 CALL ET 
-023B   0008           00771                 RETURN
-023C   3014           00772 letterB MOVLW b'10100' ;upper bits of B
-023D   228C           00773                 CALL ET
-023E   3012           00774                 MOVLW b'10010' ;lower bits of B
-023F   228C           00775                 CALL ET 
-0240   0008           00776                 RETURN
-0241   3015           00777 letterS MOVLW b'10101' ;upper bits of S
-0242   228C           00778                 CALL ET
-0243   3013           00779                 MOVLW b'10011' ;lower bits of S
-0244   228C           00780                 CALL ET 
-0245   0008           00781                 RETURN
-0246   3014           00782 letterC MOVLW b'10100' ;upper bits of C
-0247   228C           00783                 CALL ET
-0248   3013           00784                 MOVLW b'10011' ;lower bits of C
-0249   228C           00785                 CALL ET 
-024A   0008           00786                 RETURN
-024B   3015           00787 letterZ MOVLW b'10101' ;upper bits of Z
-024C   228C           00788                 CALL ET
-024D   301A           00789                 MOVLW b'11010' ;lower bits of Z
-024E   228C           00790                 CALL ET 
-024F   0008           00791                 RETURN
-0250   3012           00792 charStar        MOVLW b'10010' ;upper bits of Star Character
-0251   228C           00793                 CALL ET         
-0252   301A           00794                 MOVLW b'11010' ;lower bits of Star Character
-0253   228C           00795                 CALL ET 
-0254   0008           00796                 RETURN
-0255   301F           00797 rectangle       MOVLW   b'11111'
-0256   228C           00798                         CALL    ET
-0257   301F           00799                         MOVLW   b'11111'
-0258   228C           00800                         CALL    ET
-0259   0008           00801                         RETURN
-025A   3015           00802 empty           MOVLW   b'10101'
-025B   228C           00803                         CALL    ET      
-025C   301F           00804                         MOVLW   b'11111'
-025D   228C           00805                         CALL    ET
-025E   0008           00806                         RETURN
-025F   3014           00807 at                      MOVLW   b'10100'
-0260   228C           00808                         CALL    ET      
-0261   3010           00809                         MOVLW   b'10000'
-0262   228C           00810                         CALL    ET
-0263   0008           00811                         RETURN
-0264   3012           00812 comma           MOVLW   b'10010'
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 17
+                      00760 
+                      00761                                         ;---------CHECKING POSITION TO RIGHT OF CURRENT POSITION--------
+                      00762                                         
+0216   3001           00763                                         MOVLW   b'1'
+0217   0728           00764                                         ADDWF   CURRENT_POSITION,0      ;SAVING CURR_POS + 1 IN W
+0218   0084           00765                                         MOVWF   FSR
+                      00766 
+                      00767                                         ;CHECK IF THIS REG CONTENT IS END
+0219   1980           00768                                         BTFSC   INDF, 3
+021A   2A5A           00769                                         GOTO    SOLVED
+                      00770 
+                      00771                                         ;CHECKING IF CURRENT POSITION IS VISITED
+021B   1A00           00772                                         BTFSC   INDF, 4
+021C   2A1F           00773                                         GOTO    CHECK_LEFT
+                      00774 
+                      00775                                         ;CHECK IF THIS REG CONTENT IS EMPTY
+021D   1880           00776                                         BTFSC   INDF, 1
+021E   2A6F           00777                                         GOTO    EMPTY_CASE
+                      00778 
+                      00779                                         
+021F   3002           00780 CHECK_LEFT                      MOVLW   b'0010'
+0220   00AB           00781                                         MOVWF   PREVIOUS_COMMAND
+                      00782 
+                      00783                                         ;-------------CHECKING BOUNDS----------------
+                      00784 
+                      00785                                         ;TOP LEFT
+0221   3000           00786                                         MOVLW   d'0'
+0222   0228           00787                                         SUBWF   CURRENT_POSITION, 0
+                      00788 
+                      00789                                         ;IF EQUAL GOTO CHECK UP
+0223   1903           00790                                         BTFSC   STATUS, Z
+0224   2A1F           00791                                         GOTO    CHECK_LEFT
+                      00792                                         
+                      00793                                         ;BOT LEFT
+0225   301E           00794                                         MOVLW   d'30'
+0226   0228           00795                                         SUBWF   CURRENT_POSITION, 0                                     
+                      00796 
+                      00797                                         ;IF EQUAL GOTO CHECK UP
+0227   1903           00798                                         BTFSC   STATUS, Z
+0228   2A1F           00799                                         GOTO    CHECK_LEFT                                      
+                      00800                                         ;--------------------------------------------           
+                      00801                         
+0229   236C           00802                                         CALL    CURSOR_MOVELEFT ;SETTING CURSOR MOVING DIRECTION
+                      00803 
+                      00804                                         ;---------CHECKING POSITION TO LEFT OF CURRENT POSITION--------
+                      00805                                         
+022A   3001           00806                                         MOVLW   b'1'
+022B   0228           00807                                         SUBWF   CURRENT_POSITION,0      ;SAVING CURR_POS + 1 IN W
+022C   0084           00808                                         MOVWF   FSR
+                      00809 
+                      00810                                         ;CHECK IF THIS REG CONTENT IS END
+022D   1980           00811                                         BTFSC   INDF, 3
+022E   2A5A           00812                                         GOTO    SOLVED
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 17
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0265   228C           00813                         CALL    ET      
-0266   301C           00814                         MOVLW   b'11100'
-0267   228C           00815                         CALL    ET
-0268   0008           00816                         RETURN
-0269   3013           00817 nb0                     MOVLW   b'10011'
-026A   228C           00818                         CALL    ET      
-026B   3010           00819                         MOVLW   b'10000'
-026C   228C           00820                         CALL    ET
-026D   0008           00821                         RETURN
-026E   3013           00822 nb1                     MOVLW   b'10011'
-026F   228C           00823                         CALL    ET      
-0270   3011           00824                         MOVLW   b'10001'
-0271   228C           00825                         CALL    ET
-0272   0008           00826                         RETURN
-0273   3013           00827 nb2                     MOVLW   b'10011'
-0274   228C           00828                         CALL    ET      
-0275   3012           00829                         MOVLW   b'10010'
-0276   228C           00830                         CALL    ET
-0277   0008           00831                         RETURN
-0278   3013           00832 nb3                     MOVLW   b'10011'
-0279   228C           00833                         CALL    ET      
-027A   3013           00834                         MOVLW   b'10011'
-027B   228C           00835                         CALL    ET
-027C   0008           00836                         RETURN
-027D   3013           00837 nb4                     MOVLW   b'10011'
-027E   228C           00838                         CALL    ET      
-027F   3014           00839                         MOVLW   b'10100'
-0280   228C           00840                         CALL    ET
-0281   0008           00841                         RETURN
-0282   3013           00842 nb5                     MOVLW   b'10011'
-0283   228C           00843                         CALL    ET      
-0284   3015           00844                         MOVLW   b'10101'
-0285   228C           00845                         CALL    ET
-0286   0008           00846                         RETURN
-0287   300C           00847 NEWLINE         MOVLW b'01100' ; 3 bits to jump address
-0288   228C           00848                         CALL ET
-                      00849                 
-0289   3000           00850                         MOVLW b'00000' ; 4 bits to jump address
-028A   228C           00851                         CALL ET
-028B   0008           00852                         RETURN
-                      00853 
-                      00854 ;------------------------------------------
-                      00855 
-                      00856 ;------DELAYS AND OTHER FIXED FUNCTIONS---------
-028C   0085           00857 ET              MOVWF   PORTA
-028D   1486           00858                 BSF             PORTB,1; making a falling edge
-028E   0000           00859                 NOP
-028F   1086           00860                 BCF             PORTB,1
-0290   229B           00861                 CALL    PRINTDELAY; this is to wait for LCD to stop executing
-0291   0008           00862                 RETURN
-                      00863 
-                      00864 
-                      00865 
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 18
+                      00813 
+                      00814                                         ;CHECKING IF CURRENT POSITION IS VISITED
+022F   1A00           00815                                         BTFSC   INDF, 4
+0230   2A33           00816                                         GOTO    CHECK_UP
+                      00817 
+                      00818                                         ;CHECK IF THIS REG CONTENT IS EMPTY
+0231   1880           00819                                         BTFSC   INDF, 1
+0232   2A6F           00820                                         GOTO    EMPTY_CASE
+                      00821 
+                      00822 
+0233   3004           00823 CHECK_UP                        MOVLW   b'0100'
+0234   00AB           00824                                         MOVWF   PREVIOUS_COMMAND
+                      00825 
+                      00826                                         ;-------------CHECKING BOUNDS----------------
+                      00827 
+                      00828                                         ;IF FIRST ROW, GOTO CHECK_DOWN
+0235   301E           00829                                         MOVLW   d'30'
+0236   0228           00830                                         SUBWF   CURRENT_POSITION, 0
+0237   1903           00831                                         BTFSC   STATUS, Z
+0238   2A3C           00832                                         GOTO    ROW2
+0239   1803           00833                                         BTFSC   STATUS, C
+023A   2A3C           00834                                         GOTO    ROW2
+023B   2A47           00835                                         GOTO    CHECK_DOWN
+                      00836 
+023C                  00837 ROW2                            ;IF SECOND ROW, CHECK UP
+023C   300A           00838                                         MOVLW   d'10'
+023D   0228           00839                                         SUBWF   CURRENT_POSITION, 0
+023E   0084           00840                                         MOVWF   FSR
+                      00841                                         
+                      00842                                         ;CHECK IF THIS REG CONTENT IS END
+023F   1980           00843                                         BTFSC   INDF, 3
+0240   2A5A           00844                                         GOTO    SOLVED
+                      00845 
+                      00846                                         ;CHECKING IF CURRENT POSITION IS VISITED
+0241   1A00           00847                                         BTFSC   INDF, 4
+0242   2A47           00848                                         GOTO    CHECK_DOWN
+                      00849 
+                      00850                                         ;CHECK IF THIS REG CONTENT IS EMPTY
+0243   1506           00851                                         BSF             PORTB,2 ;TEST
+0244   1880           00852                                         BTFSC   INDF, 1
+0245   2A6F           00853                                         GOTO    EMPTY_CASE
+0246   2A47           00854                                         GOTO    CHECK_DOWN
+                      00855                                 
+                      00856 
+                      00857 
+0247   3008           00858 CHECK_DOWN                      MOVLW   b'1000'
+0248   00AB           00859                                         MOVWF   PREVIOUS_COMMAND
+                      00860 
+                      00861                                         ;-------------CHECKING BOUNDS----------------
+                      00862                                         ;IF SECOND ROW, GOTO BLOCK_CURRENTPOSITION
+0249   301D           00863                                         MOVLW   d'29'
+024A   0228           00864                                         SUBWF   CURRENT_POSITION, 0
+024B   1903           00865                                         BTFSC   STATUS, Z
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 18
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0292   3000           00866 POWERUPDELAY    MOVLW   d'00'   ; setting up 40ms delay
-0293   008C           00867                                 MOVWF   COUNTER
-0294   3033           00868                                 MOVLW   d'51'
-0295   008D           00869                                 MOVWF   COUNTER2
-                      00870 
-0296   0F8C           00871 LOOP    INCFSZ  COUNTER,F
-0297   2A96           00872                 GOTO    LOOP
-0298   0B8D           00873                 DECFSZ  COUNTER2,F
-0299   2A96           00874                 GOTO    LOOP
-029A   0008           00875                 RETURN
-                      00876 
-029B   3000           00877 PRINTDELAY      MOVLW   d'00'; SETTING UP 3.85MS DELAY
-029C   008C           00878                         MOVWF   COUNTER 
-029D   3005           00879                         MOVLW   d'5'
-029E   008D           00880                         MOVWF   COUNTER2
-                      00881 
-029F   0F8C           00882 LOOP1   INCFSZ  COUNTER,F
-02A0   2A9F           00883                 GOTO    LOOP1   
-02A1   0B8D           00884                 DECFSZ  COUNTER2,F
-02A2   2A9F           00885                 GOTO    LOOP1
-02A3   0008           00886                 RETURN
-                      00887 
-02A4   30F9           00888 DEBOUNCE_DELAY  MOVLW   d'249'
-02A5   0090           00889                                 MOVWF   DEBOUNCECOUNT
-                      00890                         
-02A6   0000           00891 DEBOUNCELOOP    NOP             
+024C   2A50           00866                                         GOTO    ROW1
+024D   1C03           00867                                         BTFSS   STATUS, C
+024E   2A50           00868                                         GOTO    ROW1
+024F   2A5C           00869                                         GOTO    BLOCK_CURRENTPOSITION
+                      00870                                         
+0250                  00871 ROW1                            ;IF FIRST ROW, CHECK DOWN
+0250   300A           00872                                         MOVLW   d'10'
+0251   0728           00873                                         ADDWF   CURRENT_POSITION, 0
+0252   0084           00874                                         MOVWF   FSR
+                      00875                                         
+                      00876                                         ;CHECK IF THIS REG CONTENT IS END
+0253   1980           00877                                         BTFSC   INDF, 3
+0254   2A5A           00878                                         GOTO    SOLVED
+                      00879 
+                      00880                                         ;CHECKING IF CURRENT POSITION IS VISITED
+0255   1A00           00881                                         BTFSC   INDF, 4
+0256   2A5C           00882                                         GOTO    BLOCK_CURRENTPOSITION
+                      00883 
+                      00884                                         ;CHECK IF THIS REG CONTENT IS EMPTY
+0257   1880           00885                                         BTFSC   INDF, 1
+0258   2A6F           00886                                         GOTO    EMPTY_CASE
+0259   2A5C           00887                                         GOTO    BLOCK_CURRENTPOSITION
+                      00888 
+025A   2B62           00889 SOLVED                          GOTO    CLEARDISPLAY
+                      00890 
+025B   2B62           00891 NOPATH                          GOTO    CLEARDISPLAY
+                      00892 
+025C   0828           00893 BLOCK_CURRENTPOSITION   MOVF    CURRENT_POSITION,0
+025D   0084           00894                                                 MOVWF   FSR
+025E   1400           00895                                                 BSF             INDF,0
+025F   1080           00896                                                 BCF             INDF,1
+0260   2362           00897                                                 CALL    CLEARDISPLAY
+0261   2376           00898                                                 CALL    INDA
+0262   2339           00899                                                 CALL    NEWLINE
+0263   237B           00900                                                 CALL    INDA1
+                      00901                                                 ;CLEAR VISITED FLAG
+0264   3014           00902                                                 MOVLW   d'20' ;INITIALIZE POINTER
+0265   0084           00903                                                 MOVWF   FSR
+0266   1200           00904 NEXT                                    BCF             INDF,4
 Message[305]: Using default destination of 1 (file).
-02A7   0B90           00892                                 DECFSZ  DEBOUNCECOUNT
-02A8   2AA6           00893                                 GOTO    DEBOUNCELOOP
-02A9   0008           00894                                 RETURN
-                      00895 
-02AA   3000           00896 CLEARDISPLAY    MOVLW b'00000' ;initializing clear display
-02AB   228C           00897                                 CALL ET
-02AC   3001           00898                                 MOVLW b'00001' ;clear display
-02AD   228C           00899                                 CALL ET
-02AE   0008           00900                                 RETURN
-                      00901 
-02AF   3000           00902 SET_BLINKING    MOVLW   b'00000'        ;initializing display
-02B0   228C           00903                                 CALL    ET                      
-                      00904 
-02B1   300F           00905                                 MOVLW   b'01111'        ;setting display to ON
-02B2   228C           00906                                 CALL    ET
-02B3   0008           00907                                 RETURN
-                      00908 
-02B4   3000           00909 CURSOR_MOVELEFT         MOVLW   b'00000';set cursor move position to the left
-02B5   228C           00910                                         CALL    ET
-02B6   3004           00911                                         MOVLW   b'00100'
-02B7   228C           00912                                         CALL    ET
-02B8   0008           00913                                         RETURN
-                      00914 
-02B9   3000           00915 CURSOR_MOVERIGHT        MOVLW   b'00000';set cursor move position to the left
-02BA   228C           00916                                         CALL    ET
-02BB   3006           00917                                         MOVLW   b'00110'
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 19
+0267   0A84           00905                                                 INCF    FSR
+0268   3027           00906                                                 MOVLW   d'39'
+0269   0204           00907                                                 SUBWF   FSR,0
+026A   1D03           00908                                                 BTFSS   STATUS,Z
+026B   2A66           00909                                                 GOTO    NEXT
+026C   082A           00910                                                 MOVF    STARTING_POSITION,0
+026D   00A8           00911                                                 MOVWF   CURRENT_POSITION
+026E   2A09           00912                                                 GOTO    SOLVE_MAZE
+                      00913 
+026F                  00914 EMPTY_CASE                      ;Incrementing cursor position
+026F   2280           00915                                         CALL    INCREMENT_CURSOR
+                      00916 
+0270   182B           00917                                         BTFSC   PREVIOUS_COMMAND, 0
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 19
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-02BC   228C           00918                                         CALL    ET
-02BD   0008           00919                                         RETURN
-                      00920 ;---------------------------
-                      00921 
-                      00922 ;-----------------INDIRECT ADDRESSING---------------------
-                      00923 
-02BE   3014           00924 INDA            MOVLW   d'20'
-02BF   0084           00925                                 MOVWF   FSR
-02C0   300A           00926                                 MOVLW   d'10'
-02C1   0091           00927                                 MOVWF   ADDRESSING_COUNTER
-02C2   2AC7           00928                                 GOTO    LOOP1M
-                      00929 
-02C3   301E           00930 INDA1           MOVLW d'30'
-02C4   0084           00931                                 MOVWF FSR
-02C5   300A           00932                                 MOVLW d'10'
-02C6   0091           00933                                 MOVWF ADDRESSING_COUNTER
+0271   2287           00918                                         CALL    INCREMENT_POSITION_RIGHT
+0272   18AB           00919                                         BTFSC   PREVIOUS_COMMAND, 1
+0273   228A           00920                                         CALL    INCREMENT_POSITION_LEFT
+0274   192B           00921                                         BTFSC   PREVIOUS_COMMAND, 2
+0275   228D           00922                                         CALL    INCREMENT_POSITION_UP
+0276   19AB           00923                                         BTFSC   PREVIOUS_COMMAND, 3
+0277   2291           00924                                         CALL    INCREMENT_POSITION_DOWN
+                      00925 
+                      00926                                         ;Printing star?
+0278   2302           00927                                         CALL    charStar
+0279   2344           00928                                         CALL    LONGDELAY
+                      00929                                         
+                      00930                                         ;LABELLING CURRENT POSITION AS VISITED
+027A   0828           00931                                         MOVF    CURRENT_POSITION,0      ;MOVING CURRENT_POS CONTENT TO W
+027B   0084           00932                                         MOVWF   FSR
+027C   1600           00933                                         BSF             INDF, 4 ;SETTING CUR_POS REGISTER AS VISITED
                       00934 
-02C7   1800           00935 LOOP1M          BTFSC INDF,0
-02C8   2255           00936                                 CALL rectangle
-                      00937                                 
-02C9   1880           00938                                 BTFSC INDF,1
-02CA   225A           00939                                 CALL empty
+                      00935                                         ;INCREMENTING ITERATIONS COUNT
+027D   0081           00936                                         MOVWF   b'1'
+027E   07A9           00937                                         ADDWF   ITERATIONS_COUNTER, 1
+                      00938 
+027F   2A09           00939                                         GOTO    SOLVE_MAZE
                       00940 
-02CB   1900           00941                                 BTFSC INDF,2
-02CC   2241           00942                                 CALL letterS
-                      00943 
-02CD   1980           00944                                 BTFSC INDF,3
-02CE   2219           00945                                 CALL letterE
-                      00946 
-Message[305]: Using default destination of 1 (file).
-02CF   0A84           00947                                 INCF FSR
-Message[305]: Using default destination of 1 (file).
-02D0   0B91           00948                                 DECFSZ ADDRESSING_COUNTER
+                      00941 ;THIS FUNCTION PRINTS THE OBJECT IN THE CURRENT POSITION AGAIN TO INCREMENT THE CURSOR 
+0280   0828           00942 INCREMENT_CURSOR                MOVF    CURRENT_POSITION,0      ;MOVING CURRENT_POS CONTENT TO W
+0281   0084           00943                                                 MOVWF   FSR
+0282   1E00           00944                                                 BTFSS   INDF, 4
+0283   2295           00945                                                 CALL    CHECK_INDF_PRINT  ;CURSOR INCREMENTED BY PRINTIN
+                            G CUR_POS IN CUR_POS
+0284   1A00           00946                                                 BTFSC   INDF, 4
+0285   2302           00947                                                 CALL    charStar
+0286   0008           00948                                                 RETURN
                       00949 
-02D1   2AC7           00950                                 GOTO  LOOP1M
-02D2   0008           00951                                 RETURN
-                      00952 
+0287   3001           00950 INCREMENT_POSITION_RIGHT                MOVLW   d'1'
+0288   07A8           00951                                                                 ADDWF   CURRENT_POSITION,1
+0289   0008           00952                                                                 RETURN
                       00953 
+028A   3001           00954 INCREMENT_POSITION_LEFT                 MOVLW   d'1'
+028B   02A8           00955                                                                 SUBWF   CURRENT_POSITION,1
+028C   0008           00956                                                                 RETURN
+                      00957 
+028D   300A           00958 INCREMENT_POSITION_UP                   MOVLW   d'10'
+028E   02A8           00959                                                                 SUBWF   CURRENT_POSITION,1
+028F   229E           00960                                                                 CALL    MOVE_CURSOR_TO_CURRENT_POSITION
+0290   0008           00961                                                                 RETURN
+                      00962 
+0291   300A           00963 INCREMENT_POSITION_DOWN                 MOVLW   d'10'
+0292   07A8           00964                                                                 ADDWF   CURRENT_POSITION,1
+0293   229E           00965                                                                 CALL    MOVE_CURSOR_TO_CURRENT_POSITION
+0294   0008           00966                                                                 RETURN
+                      00967 
+0295   1800           00968 CHECK_INDF_PRINT        BTFSC INDF,0
+0296   2307           00969                                         CALL rectangle
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 20
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0297   1880           00970                                         BTFSC INDF,1
+0298   230C           00971                                         CALL empty
+0299   1900           00972                                         BTFSC INDF,2
+029A   22F3           00973                                         CALL letterS
+029B   1980           00974                                         BTFSC INDF,3
+029C   22CB           00975                                         CALL letterE
+029D   0008           00976                                         RETURN
+                      00977 
+029E   0828           00978 MOVE_CURSOR_TO_CURRENT_POSITION         MOVF    CURRENT_POSITION, 0
+029F   3C1E           00979                                                                         SUBLW   d'30'
+                      00980 
+                      00981                                                                         ;IF Z=0, C=0 : NEGATIVE RESULT, 
+                            GO TO SECOND LINE MOVE
+02A0   1903           00982                                                                         BTFSC   STATUS, Z       ;IF 1, T
+                            HEN WE'RE SECOND LINE
+02A1   2AAC           00983                                                                         GOTO    MOVE_SECONDLINE 
+                      00984 
+02A2   1C03           00985                                                                         BTFSS   STATUS, C       ;IF ZERO
+                             THEN SECOND LINE
+02A3   2AAC           00986                                                                         GOTO    MOVE_SECONDLINE
+                      00987 
+                      00988                                                                         ;IF Z=0, C = 1 : POSITIVE RESULT
+                            , GOTO TO FIRST LINE MOVE
+02A4   1D03           00989                                                                         BTFSS   STATUS, Z
+02A5   2AA6           00990                                                                         GOTO    MOVE_FIRSTLINE
+                      00991 
+02A6   3008           00992 MOVE_FIRSTLINE          MOVLW b'01000' ; 3 bits to jump address
+02A7   233E           00993                                         CALL ET
+                      00994                                         
+02A8   3014           00995                                         MOVLW   d'20'
+02A9   0228           00996                                         SUBWF   CURRENT_POSITION,0
+02AA   233E           00997                                         CALL    ET
+02AB   0008           00998                                         RETURN
+                      00999 
+02AC   300C           01000 MOVE_SECONDLINE         MOVLW   b'01100' ; 3 bits to jump address
+02AD   233E           01001                                         CALL    ET
+                      01002 
+02AE   301E           01003                                         MOVLW   d'30'
+02AF   0228           01004                                         SUBWF   CURRENT_POSITION,0
+02B0   233E           01005                                         CALL    ET
+02B1   0008           01006                                         RETURN
+                      01007                 
+                      01008 
+                      01009 ;-----------------------------------------------------------------------------
+                      01010 ;------CHARACTER DECLARATIONS---------
+                      01011 
+02B2   3012           01012 charSp  MOVLW b'10010' ;upper bits of Space character
+02B3   233E           01013                 CALL ET
+02B4   3010           01014                 MOVLW b'10000' ;lower bits of Space character
+02B5   233E           01015                 CALL ET 
+02B6   0008           01016                 RETURN          
+02B7   3015           01017 letterV MOVLW b'10101' ;upper bits of V
+02B8   233E           01018                 CALL ET
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 21
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02B9   3016           01019                 MOVLW b'10110' ;lower bits of V
+02BA   233E           01020                 CALL ET  
+02BB   0008           01021                 RETURN
+02BC   3015           01022 letterR MOVLW b'10101' ;upper bits of R
+02BD   233E           01023                 CALL ET
+02BE   3012           01024                 MOVLW b'10010' ;lower bits of R
+02BF   233E           01025                 CALL ET  
+02C0   0008           01026                 RETURN
+02C1   3014           01027 letterM MOVLW b'10100' ;upper bits of M
+02C2   233E           01028                 CALL ET
+02C3   301D           01029                 MOVLW b'11101' ;lower bits of M
+02C4   233E           01030                 CALL ET 
+02C5   0008           01031                 RETURN
+02C6   3014           01032 letterD MOVLW b'10100' ;upper bits of D
+02C7   233E           01033                 CALL ET
+02C8   3014           01034                 MOVLW b'10100' ;lower bits of D
+02C9   233E           01035                 CALL ET 
+02CA   0008           01036                 RETURN
+02CB   3014           01037 letterE MOVLW b'10100' ;upper bits of E
+02CC   233E           01038                 CALL ET
+02CD   3015           01039                 MOVLW b'10101' ;lower bits of E
+02CE   233E           01040                 CALL ET 
+02CF   0008           01041                 RETURN
+02D0   3014           01042 letterF MOVLW b'10100' ;upper bits of F
+02D1   233E           01043                 CALL ET
+02D2   3016           01044                 MOVLW b'10110' ;lower bits of D
+02D3   233E           01045                 CALL ET 
+02D4   0008           01046                 RETURN
+02D5   3014           01047 letterA MOVLW b'10100' ;upper bits of A
+02D6   233E           01048                 CALL ET
+02D7   3011           01049                 MOVLW b'10001' ;lower bits of A
+02D8   233E           01050                 CALL ET 
+02D9   0008           01051                 RETURN
+02DA   3015           01052 letterU MOVLW b'10101' ;upper bits of U
+02DB   233E           01053                 CALL ET
+02DC   3015           01054                 MOVLW b'10101' ;lower bits of U
+02DD   233E           01055                 CALL ET 
+02DE   0008           01056                 RETURN
+02DF   3014           01057 letterL MOVLW b'10100' ;upper bits of L
+02E0   233E           01058                 CALL ET
+02E1   301C           01059                 MOVLW b'11100' ;lower bits of L
+02E2   233E           01060                 CALL ET 
+02E3   0008           01061                 RETURN
+02E4   3015           01062 letterT MOVLW b'10101' ;upper bits of T
+02E5   233E           01063                 CALL ET
+02E6   3014           01064                 MOVLW b'10100' ;lower bits of T
+02E7   233E           01065                 CALL ET 
+02E8   0008           01066                 RETURN
+02E9   3014           01067 letterO MOVLW b'10100' ;upper bits of O
+02EA   233E           01068                 CALL ET
+02EB   301F           01069                 MOVLW b'11111' ;lower bits of O
+02EC   233E           01070                 CALL ET 
+02ED   0008           01071                 RETURN
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 22
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02EE   3014           01072 letterB MOVLW b'10100' ;upper bits of B
+02EF   233E           01073                 CALL ET
+02F0   3012           01074                 MOVLW b'10010' ;lower bits of B
+02F1   233E           01075                 CALL ET 
+02F2   0008           01076                 RETURN
+02F3   3015           01077 letterS MOVLW b'10101' ;upper bits of S
+02F4   233E           01078                 CALL ET
+02F5   3013           01079                 MOVLW b'10011' ;lower bits of S
+02F6   233E           01080                 CALL ET 
+02F7   0008           01081                 RETURN
+02F8   3014           01082 letterC MOVLW b'10100' ;upper bits of C
+02F9   233E           01083                 CALL ET
+02FA   3013           01084                 MOVLW b'10011' ;lower bits of C
+02FB   233E           01085                 CALL ET 
+02FC   0008           01086                 RETURN
+02FD   3015           01087 letterZ MOVLW b'10101' ;upper bits of Z
+02FE   233E           01088                 CALL ET
+02FF   301A           01089                 MOVLW b'11010' ;lower bits of Z
+0300   233E           01090                 CALL ET 
+0301   0008           01091                 RETURN
+0302   3012           01092 charStar        MOVLW b'10010' ;upper bits of Star Character
+0303   233E           01093                 CALL ET         
+0304   301A           01094                 MOVLW b'11010' ;lower bits of Star Character
+0305   233E           01095                 CALL ET 
+0306   0008           01096                 RETURN
+0307   301F           01097 rectangle       MOVLW   b'11111'
+0308   233E           01098                         CALL    ET
+0309   301F           01099                         MOVLW   b'11111'
+030A   233E           01100                         CALL    ET
+030B   0008           01101                         RETURN
+030C   3015           01102 empty           MOVLW   b'10101'
+030D   233E           01103                         CALL    ET      
+030E   301F           01104                         MOVLW   b'11111'
+030F   233E           01105                         CALL    ET
+0310   0008           01106                         RETURN
+0311   3014           01107 at                      MOVLW   b'10100'
+0312   233E           01108                         CALL    ET      
+0313   3010           01109                         MOVLW   b'10000'
+0314   233E           01110                         CALL    ET
+0315   0008           01111                         RETURN
+0316   3012           01112 comma           MOVLW   b'10010'
+0317   233E           01113                         CALL    ET      
+0318   301C           01114                         MOVLW   b'11100'
+0319   233E           01115                         CALL    ET
+031A   0008           01116                         RETURN
+031B   3013           01117 nb0                     MOVLW   b'10011'
+031C   233E           01118                         CALL    ET      
+031D   3010           01119                         MOVLW   b'10000'
+031E   233E           01120                         CALL    ET
+031F   0008           01121                         RETURN
+0320   3013           01122 nb1                     MOVLW   b'10011'
+0321   233E           01123                         CALL    ET      
+0322   3011           01124                         MOVLW   b'10001'
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 23
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0323   233E           01125                         CALL    ET
+0324   0008           01126                         RETURN
+0325   3013           01127 nb2                     MOVLW   b'10011'
+0326   233E           01128                         CALL    ET      
+0327   3012           01129                         MOVLW   b'10010'
+0328   233E           01130                         CALL    ET
+0329   0008           01131                         RETURN
+032A   3013           01132 nb3                     MOVLW   b'10011'
+032B   233E           01133                         CALL    ET      
+032C   3013           01134                         MOVLW   b'10011'
+032D   233E           01135                         CALL    ET
+032E   0008           01136                         RETURN
+032F   3013           01137 nb4                     MOVLW   b'10011'
+0330   233E           01138                         CALL    ET      
+0331   3014           01139                         MOVLW   b'10100'
+0332   233E           01140                         CALL    ET
+0333   0008           01141                         RETURN
+0334   3013           01142 nb5                     MOVLW   b'10011'
+0335   233E           01143                         CALL    ET      
+0336   3015           01144                         MOVLW   b'10101'
+0337   233E           01145                         CALL    ET
+0338   0008           01146                         RETURN
+0339   300C           01147 NEWLINE         MOVLW b'01100' ; 3 bits to jump address
+033A   233E           01148                         CALL ET
+                      01149                 
+033B   3000           01150                         MOVLW b'00000' ; 4 bits to jump address
+033C   233E           01151                         CALL ET
+033D   0008           01152                         RETURN
+                      01153 
+                      01154 ;------------------------------------------
+                      01155 
+                      01156 ;------DELAYS AND OTHER FIXED FUNCTIONS---------
+033E   0085           01157 ET              MOVWF   PORTA
+033F   1486           01158                 BSF             PORTB,1; making a falling edge
+0340   0000           01159                 NOP
+0341   1086           01160                 BCF             PORTB,1
+0342   2353           01161                 CALL    PRINTDELAY; this is to wait for LCD to stop executing
+0343   0008           01162                 RETURN
+                      01163 
+0344   3005           01164 LONGDELAY               MOVLW   d'5'
+0345   00BB           01165                                 MOVWF   TEMP
+                      01166 
+0346   234A           01167 LOOPLONG                CALL    POWERUPDELAY
+0347   0BBB           01168                 DECFSZ  TEMP,1
+0348   2B46           01169                 GOTO    LOOPLONG
+0349   0008           01170                 RETURN
+                      01171 
+                      01172 
+034A   3000           01173 POWERUPDELAY    MOVLW   d'00'   ; setting up 40ms delay
+034B   008C           01174                                 MOVWF   COUNTER
+034C   3033           01175                                 MOVLW   d'51'
+034D   008D           01176                                 MOVWF   COUNTER2
+                      01177 
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 24
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+034E   0F8C           01178 LOOP    INCFSZ  COUNTER,F
+034F   2B4E           01179                 GOTO    LOOP
+0350   0B8D           01180                 DECFSZ  COUNTER2,F
+0351   2B4E           01181                 GOTO    LOOP
+0352   0008           01182                 RETURN
+                      01183 
+0353   3000           01184 PRINTDELAY      MOVLW   d'00'; SETTING UP 3.85MS DELAY
+0354   008C           01185                         MOVWF   COUNTER 
+0355   3005           01186                         MOVLW   d'5'
+0356   008D           01187                         MOVWF   COUNTER2
+                      01188 
+0357   0F8C           01189 LOOP1   INCFSZ  COUNTER,F
+0358   2B57           01190                 GOTO    LOOP1   
+0359   0B8D           01191                 DECFSZ  COUNTER2,F
+035A   2B57           01192                 GOTO    LOOP1
+035B   0008           01193                 RETURN
+                      01194 
+035C   30F9           01195 DEBOUNCE_DELAY  MOVLW   d'249'
+035D   0090           01196                                 MOVWF   DEBOUNCECOUNT
+                      01197                         
+035E   0000           01198 DEBOUNCELOOP    NOP             
+Message[305]: Using default destination of 1 (file).
+035F   0B90           01199                                 DECFSZ  DEBOUNCECOUNT
+0360   2B5E           01200                                 GOTO    DEBOUNCELOOP
+0361   0008           01201                                 RETURN
+                      01202 
+0362   3000           01203 CLEARDISPLAY    MOVLW b'00000' ;initializing clear display
+0363   233E           01204                                 CALL ET
+0364   3001           01205                                 MOVLW b'00001' ;clear display
+0365   233E           01206                                 CALL ET
+0366   0008           01207                                 RETURN
+                      01208 
+0367   3000           01209 SET_BLINKING    MOVLW   b'00000'        ;initializing display
+0368   233E           01210                                 CALL    ET                      
+                      01211 
+0369   300F           01212                                 MOVLW   b'01111'        ;setting display to ON
+036A   233E           01213                                 CALL    ET
+036B   0008           01214                                 RETURN
+                      01215 
+036C   3000           01216 CURSOR_MOVELEFT         MOVLW   b'00000';set cursor move position to the left
+036D   233E           01217                                         CALL    ET
+036E   3004           01218                                         MOVLW   b'00100'
+036F   233E           01219                                         CALL    ET
+0370   0008           01220                                         RETURN
+                      01221 
+0371   3000           01222 CURSOR_MOVERIGHT        MOVLW   b'00000';set cursor move position to the left
+0372   233E           01223                                         CALL    ET
+0373   3006           01224                                         MOVLW   b'00110'
+0374   233E           01225                                         CALL    ET
+0375   0008           01226                                         RETURN
+                      01227 ;---------------------------
+                      01228 
+                      01229 ;-----------------INDIRECT ADDRESSING---------------------
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 25
+Maze Solver
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01230 
+0376   3014           01231 INDA            MOVLW   d'20'
+0377   0084           01232                                 MOVWF   FSR
+0378   300A           01233                                 MOVLW   d'10'
+0379   0091           01234                                 MOVWF   ADDRESSING_COUNTER
+037A   2B7F           01235                                 GOTO    LOOP1M
+                      01236 
+037B   301E           01237 INDA1           MOVLW d'30'
+037C   0084           01238                                 MOVWF FSR
+037D   300A           01239                                 MOVLW d'10'
+037E   0091           01240                                 MOVWF ADDRESSING_COUNTER
+                      01241 
+037F   1800           01242 LOOP1M          BTFSC INDF,0
+0380   2307           01243                                 CALL rectangle
+                      01244                                 
+0381   1880           01245                                 BTFSC INDF,1
+0382   230C           01246                                 CALL empty
+                      01247 
+0383   1900           01248                                 BTFSC INDF,2
+0384   22F3           01249                                 CALL letterS
+                      01250 
+0385   1980           01251                                 BTFSC INDF,3
+0386   22CB           01252                                 CALL letterE
+                      01253 
+Message[305]: Using default destination of 1 (file).
+0387   0A84           01254                                 INCF FSR
+Message[305]: Using default destination of 1 (file).
+0388   0B91           01255                                 DECFSZ ADDRESSING_COUNTER
+                      01256 
+0389   2B7F           01257                                 GOTO  LOOP1M
+038A   0008           01258                                 RETURN
+                      01259 
+                      01260 
 Warning[205]: Found directive in column 1. (END)
-                      00954 END
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 20
+                      01261 END
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 26
 Maze Solver
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
 ADDRESSING_COUNTER                00000011
-ADJUST_NEXT_POSITION              000001BC
-BUTTONPRESS                       000000F0
+ADJUST_NEXT_POSITION              000001C8
+BLOCK_CURRENTPOSITION             0000025C
+BUTTONPRESS                       000000F6
 C                                 00000000
-CANNOT_PLACE                      000001F8
-CHECK_IF_DONE                     0000012E
-CHOOSE_MODE                       00000102
-CLEARDISPLAY                      000002AA
-CONFIRM_BUTTON                    000000FD
+CANNOT_PLACE                      00000204
+CHECK_DOWN                        00000247
+CHECK_IF_DONE                     00000137
+CHECK_INDF_PRINT                  00000295
+CHECK_LEFT                        0000021F
+CHECK_RIGHT                       0000020B
+CHECK_UP                          00000233
+CHOOSE_MODE                       00000108
+CLEARDISPLAY                      00000362
+CONFIRM_BUTTON                    00000103
 COUNTER                           0000000C
 COUNTER2                          0000000D
 CURRENT_ADDRESS                   00000012
-CURSOR_INCREMENT                  0000017B
-CURSOR_MOVELEFT                   000002B4
-CURSOR_MOVERIGHT                  000002B9
-CURSOR_NEXTLINE                   0000018F
-CURSOR_SWITCH_ROW                 0000019A
+CURRENT_POSITION                  00000028
+CURSOR_INCREMENT                  00000187
+CURSOR_MOVELEFT                   0000036C
+CURSOR_MOVERIGHT                  00000371
+CURSOR_NEXTLINE                   0000019B
+CURSOR_POSITION                   0000002A
+CURSOR_SWITCH_ROW                 000001A6
 DC                                00000001
 DEBOUNCECOUNT                     00000010
-DEBOUNCELOOP                      000002A6
-DEBOUNCE_DELAY                    000002A4
-DECREMENT                         0000018C
+DEBOUNCELOOP                      0000035E
+DEBOUNCE_DELAY                    0000035C
+DECREMENT                         00000198
 DEFAULT_START                     00000055
 EEADR                             00000009
 EECON1                            00000088
@@ -1141,98 +1498,120 @@ EECON2                            00000089
 EEDATA                            00000008
 EEIE                              00000006
 EEIF                              00000004
-END_BUTTON                        0000011D
-ET                                0000028C
+EMPTY_CASE                        0000026F
+END_BUTTON                        00000126
+ET                                0000033E
 F                                 00000001
 FSR                               00000004
 GIE                               00000007
-INCREMENT                         00000189
-INCREMENT_NEXT_POSITION           000001C1
-INCREMENT_POINTER                 00000142
-INDA                              000002BE
-INDA1                             000002C3
+INCREMENT                         00000195
+INCREMENT_CURSOR                  00000280
+INCREMENT_NEXT_POSITION           000001CD
+INCREMENT_POINTER                 0000014E
+INCREMENT_POSITION_DOWN           00000291
+INCREMENT_POSITION_LEFT           0000028A
+INCREMENT_POSITION_RIGHT          00000287
+INCREMENT_POSITION_UP             0000028D
+INDA                              00000376
+INDA1                             0000037B
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 27
+Maze Solver
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 INDF                              00000000
 INTCON                            0000000B
 INTE                              00000004
 INTEDG                            00000006
 INTF                              00000001
 IRP                               00000007
-LOOP                              00000296
-LOOP1                             0000029F
-LOOP1M                            000002C7
-MAZE_START                        000000B7
+ITERATIONS_COUNTER                00000029
+LINE                              0000002C
+LONGDELAY                         00000344
+LOOP                              0000034E
+LOOP1                             00000357
+LOOP1M                            0000037F
+LOOPLONG                          00000346
+MAZE_START                        000000BD
+MAZE_STATUS                       0000002B
 MENU                              00000032
 MENULOOP                          00000054
-MOVE_BUTTON                       000000FA
-MOVE_CURSOR_MAZE                  00000173
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 21
-Maze Solver
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
-MOVE_CURSOR_OBSTACLE              00000176
-NEWLINE                           00000287
+MOVE_BUTTON                       00000100
+MOVE_CURSOR_MAZE                  0000017F
+MOVE_CURSOR_OBSTACLE              00000182
+MOVE_CURSOR_TO_CURRENT_POSITION   0000029E
+MOVE_FIRSTLINE                    000002A6
+MOVE_SECONDLINE                   000002AC
+NEWLINE                           00000339
+NEXT                              00000266
+NOPATH                            0000025B
 NOT_PD                            00000003
 NOT_RBPU                          00000007
 NOT_TO                            00000004
 OBSTACLE_COUNTER                  00000013
-OBSTACLE_START                    00000083
+OBSTACLE_START                    00000086
 OPTION_REG                        00000081
 PCL                               00000002
 PCLATH                            0000000A
-PLACE_MAZEMODE                    000001C7
-PLACE_MAZEMODE_RETURN             000001F6
-PLACE_OBSTACLE                    000001F9
-PLACE_OBSTACLECHOOSE              000001B3
-PLACE_OBSTACLEMODE                000001B6
-PLACE_OBS_MAZEMODE                000001CD
+PLACE_MAZEMODE                    000001D3
+PLACE_MAZEMODE_RETURN             00000202
+PLACE_OBSTACLE                    00000205
+PLACE_OBSTACLECHOOSE              000001BF
+PLACE_OBSTACLEMODE                000001C2
+PLACE_OBS_MAZEMODE                000001D9
 PORTA                             00000005
 PORTB                             00000006
-POSITION1                         0000014D
-POSITION2                         00000159
-POSITION3                         00000166
-POWERUPDELAY                      00000292
-PRINTDELAY                        0000029B
+POSITION1                         00000159
+POSITION2                         00000165
+POSITION3                         00000172
+POWERUPDELAY                      0000034A
+PREVIOUS_COMMAND                  0000002B
+PRINTDELAY                        00000353
 PS0                               00000000
 PS1                               00000001
 PS2                               00000002
 PSA                               00000003
 RBIE                              00000003
-RBIF                              00000000
-RD                                00000000
-REMAINING_CASE1                   000001D8
-REMAINING_CASE2                   000001DD
-REMAINING_CASE3                   000001E2
-REMAINING_CASE4                   000001E7
-REMAINING_NUMBER                  00000032
-RETTIMER3                         00000141
-RETURN_TO_PREV_POSITION           000001EA
-RETURN_TO_PROGRAM                 0000012C
-RP0                               00000005
-RP1                               00000006
-S0                                00000107
-S00CHECKS1                        00000146
-S01CHECKS1                        0000014A
-S1                                0000010B
-SELECT                            0000000F
-SET_BLINKING                      000002AF
-SOLVE_MAZE                        000001FD
-START                             00000008
-START_BUTTON                      0000010E
-STATUS                            00000003
-SWITCH_DOWN                       0000019D
-SWITCH_UP                         000001A8
-T0CS                              00000005
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 22
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 28
 Maze Solver
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RBIF                              00000000
+RD                                00000000
+REMAINING_CASE1                   000001E4
+REMAINING_CASE2                   000001E9
+REMAINING_CASE3                   000001EE
+REMAINING_CASE4                   000001F3
+REMAINING_NUMBER                  00000032
+RETTIMER3                         0000014D
+RETURN_TO_PREV_POSITION           000001F6
+RETURN_TO_PROGRAM                 00000135
+ROW1                              00000250
+ROW2                              0000023C
+RP0                               00000005
+RP1                               00000006
+S0                                0000010D
+S00CHECKS1                        00000152
+S01CHECKS1                        00000156
+S1                                00000111
+SELECT                            0000000F
+SET_BLINKING                      00000367
+SOLVED                            0000025A
+SOLVE_MAZE                        00000209
+START                             00000008
+STARTING_POSITION                 0000002A
+START_BUTTON                      00000114
+STATUS                            00000003
+SWITCH_DOWN                       000001A9
+SWITCH_UP                         000001B4
+T0CS                              00000005
 T0IE                              00000005
 T0IF                              00000002
 T0SE                              00000004
+TEMP                              0000003B
 TIMER3                            0000000E
 TMR0                              00000001
 TRISA                             00000085
@@ -1253,41 +1632,45 @@ _RC_OSC                           00003FFF
 _WDT_OFF                          00003FFB
 _WDT_ON                           00003FFF
 _XT_OSC                           00003FFD
-__16F84A                          00000001
-__DEBUG                           1
-at                                0000025F
-charSp                            00000200
-charStar                          00000250
-comma                             00000264
-empty                             0000025A
-letterA                           00000223
-letterB                           0000023C
-letterC                           00000246
-letterD                           00000214
-letterE                           00000219
-letterF                           0000021E
-letterL                           0000022D
-letterM                           0000020F
-letterO                           00000237
-letterR                           0000020A
-letterS                           00000241
-letterT                           00000232
-letterU                           00000228
-letterV                           00000205
-letterZ                           0000024B
-nb0                               00000269
-nb1                               0000026E
-nb2                               00000273
-nb3                               00000278
-nb4                               0000027D
-nb5                               00000282
-rectangle                         00000255
-timerInterrupt                    00000137
-MPASM  5.35beta                       PROGRAM.ASM   4-23-2017  1:15:21         PAGE 23
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 29
 Maze Solver
 
-MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+SYMBOL TABLE
+  LABEL                             VALUE 
 
+__16F84A                          00000001
+__DEBUG                           1
+at                                00000311
+charSp                            000002B2
+charStar                          00000302
+comma                             00000316
+empty                             0000030C
+letterA                           000002D5
+letterB                           000002EE
+letterC                           000002F8
+letterD                           000002C6
+letterE                           000002CB
+letterF                           000002D0
+letterL                           000002DF
+letterM                           000002C1
+letterO                           000002E9
+letterR                           000002BC
+letterS                           000002F3
+letterT                           000002E4
+letterU                           000002DA
+letterV                           000002B7
+letterZ                           000002FD
+nb0                               0000031B
+nb1                               00000320
+nb2                               00000325
+nb3                               0000032A
+nb4                               0000032F
+nb5                               00000334
+rectangle                         00000307
+timerInterrupt                    00000143
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
 
 0000 : X---XXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
 0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
@@ -1300,16 +1683,25 @@ MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
 0200 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
 0240 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
 0280 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
-02C0 : XXXXXXXXXXXXXXXX XXX------------- ---------------- ----------------
+02C0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+MPASM  5.35beta                       PROGRAM.ASM   4-24-2017  18:32:12         PAGE 30
+Maze Solver
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+
+0300 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0340 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0380 : XXXXXXXXXXX----- ---------------- ---------------- ----------------
 
 All other memory blocks unused.
 
-Program Memory Words Used:   720
-Program Memory Words Free:   304
+Program Memory Words Used:   904
+Program Memory Words Free:   120
 
 
 Errors   :     0
 Warnings :     1 reported,     0 suppressed
-Messages :    14 reported,     0 suppressed
+Messages :    15 reported,     0 suppressed
 
 
