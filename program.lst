@@ -1,4 +1,4 @@
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  1
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -57,7 +57,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
                       00047                         ;CONFIGURING PORTB PINS:
                       00048                         ;RB0 -> OUTPUT TO BUZZER
                       00049                         ;RB4-7 -> INPUTS 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  2
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  2
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -116,7 +116,7 @@ Message[302]: Register in operand not in bank 0.  Ensure that bank bits are corr
 002E   22EC           00098                         CALL    letterE
 002F   22DD           00099                         CALL    letterR
                       00100 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  3
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  3
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -175,7 +175,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00151 
                       00152 
                       00153 ;--------------------DEFAULT MODE-------------------
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  4
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  4
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -234,7 +234,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00204                 
 0080   3005           00205                                 MOVLW   b'00101' 
 0081   238F           00206                                 CALL    ET
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  5
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  5
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -293,7 +293,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 00A6   0092           00257                                 MOVWF   CURRENT_ADDRESS
 00A7   0084           00258                                 MOVWF   FSR
                       00259 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  6
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  6
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -352,7 +352,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 00CC   3014           00310                                 MOVLW   d'20'
 00CD   0092           00311                                 MOVWF   CURRENT_ADDRESS
 00CE   0084           00312                                 MOVWF   FSR                             
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  7
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  7
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -411,7 +411,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00360 
                       00361 
 00F2   1D0F           00362 START_BUTTON    BTFSS   SELECT, 2       ;IF THE START BUTTON IS PRESSED IN DEFAULT OR OBSTACLE MODE WE R
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  8
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  8
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -470,7 +470,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00405         
 0113   100B           00406 RETURN_TO_PROGRAM               BCF             INTCON, RBIF    ;RESET FLAGS
 0114   0009           00407                                                 RETFIE
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE  9
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE  9
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -529,7 +529,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0135   2950           00457                                 GOTO    POSITION3
 0136   2913           00458                                 GOTO    RETURN_TO_PROGRAM
                       00459 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 10
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 10
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -588,7 +588,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0155   300C           00510                                 MOVLW   b'01100' ;4AH IS THE LOCATION
 0156   238F           00511                                 CALL    ET
                       00512                 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 11
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 11
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -647,7 +647,7 @@ Message[305]: Using default destination of 1 (file).
                       00551 
 Message[305]: Using default destination of 1 (file).
 0177   0A92           00552 INCREMENT                               INCF    CURRENT_ADDRESS
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 12
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 12
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -706,7 +706,7 @@ Message[305]: Using default destination of 1 (file).
 0197   238F           00591                                                 CALL    ET
 0198   3000           00592                                                 MOVLW   b'00000'
 0199   238F           00593                                                 CALL    ET
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 13
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 13
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -765,7 +765,7 @@ Message[305]: Using default destination of 1 (file).
 Message[305]: Using default destination of 1 (file).
 01B6   0A91           00632                                                         INCF    ADDRESSING_COUNTER
 01B7   2913           00633                                                         GOTO    RETURN_TO_PROGRAM
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 14
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 14
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -824,7 +824,7 @@ Message[305]: Using default destination of 1 (file).
 01DA   29E7           00681                                         GOTO    PLACE_MAZEMODE_RETURN
                       00682 
                       00683                                         ;RETURN TO PREVIOUS POSITION
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 15
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 15
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -883,7 +883,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 01FF   2A04           00731                                 GOTO    GREATER 
 0200   1803           00732                                 BTFSC   STATUS,C                                
 0201   2A04           00733                                 GOTO    GREATER
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 16
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 16
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -942,7 +942,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00780                                         ;--------------------------------------------
                       00781 
 021E   23D9           00782                                         CALL    CURSOR_MOVERIGHT        ;SETTING CURSOR MOVING DIRECTION
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 17
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 17
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1001,7 +1001,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       00833                                         ;CHECK IF THIS REG CONTENT IS END
 0236   1980           00834                                         BTFSC   INDF, 3
 0237   2A64           00835                                         GOTO    SOLVED
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 18
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 18
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1060,7 +1060,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0253   301D           00886                                         MOVLW   d'29'
 0254   0228           00887                                         SUBWF   CURRENT_POSITION, 0
 0255   1903           00888                                         BTFSC   STATUS, Z
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 19
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 19
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1119,7 +1119,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                             E MAZE
 0279   018F           00935                                         CLRF    SELECT  ;CLEAR SELECT AND SET IT TO "010" WHICH CORRESPO
                             NDS TO THE MENU
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 20
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 20
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1153,7 +1153,7 @@ Message[305]: Using default destination of 1 (file).
 0289   1200           00957 NEXT                                    BCF             INDF,4
 Message[305]: Using default destination of 1 (file).
 028A   0A84           00958                                                 INCF    FSR
-028B   3027           00959                                                 MOVLW   d'39'
+028B   3028           00959                                                 MOVLW   d'40'
 028C   0204           00960                                                 SUBWF   FSR,0
 028D   1D03           00961                                                 BTFSS   STATUS,Z
 028E   2A89           00962                                                 GOTO    NEXT
@@ -1178,7 +1178,7 @@ Message[305]: Using default destination of 1 (file).
 029C   2395           00981                                         CALL    LONGDELAY
                       00982                                         
                       00983                                         ;LABELLING CURRENT POSITION AS VISITED
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 21
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 21
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1237,7 +1237,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                             HEN WE'RE SECOND LINE
 02C2   2ACD           01032                                                                         GOTO    MOVE_SECONDLINE 
                       01033 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 22
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 22
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1296,7 +1296,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 02E8   238F           01082                 CALL ET
 02E9   3014           01083                 MOVLW b'10100' ;lower bits of D
 02EA   238F           01084                 CALL ET 
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 23
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 23
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1355,7 +1355,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 031D   0008           01135                 RETURN
 031E   3015           01136 letterS MOVLW b'10101' ;upper bits of S
 031F   238F           01137                 CALL ET
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 24
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 24
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1414,7 +1414,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0352   3010           01188                         MOVLW   b'10000'
 0353   238F           01189                         CALL    ET
 0354   0008           01190                         RETURN
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 25
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 25
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1473,7 +1473,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0384   149D           01241                                                 BSF     d'29',1 ;empty
 0385   149E           01242                                                 BSF     d'30',1 ;empty
 0386   149F           01243                                                 BSF     d'31',1 ;empty
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 26
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 26
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1532,7 +1532,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                       01294 
 03AE   0F8C           01295 LOOP1   INCFSZ  COUNTER,F
 03AF   2BAE           01296                 GOTO    LOOP1   
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 27
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 27
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1591,7 +1591,7 @@ Message[305]: Using default destination of 1 (file).
 03D8   0008           01346                                         RETURN
                       01347 
 03D9   3000           01348 CURSOR_MOVERIGHT        MOVLW   b'00000';set cursor move position to the left
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 28
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 28
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1650,14 +1650,14 @@ Message[305]: Using default destination of 1 (file).
                       01396 
                       01397 
 Warning[205]: Found directive in column 1. (END)
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 29
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 29
 Maze Solver
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
                       01398 END
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 30
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 30
 Maze Solver
 
 SYMBOL TABLE
@@ -1716,7 +1716,7 @@ INCREMENT_CURSOR                  000002A1
 INCREMENT_NEXT_POSITION           000001B2
 INCREMENT_POINTER                 0000012C
 INCREMENT_POSITION_DOWN           000002B2
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 31
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 31
 Maze Solver
 
 SYMBOL TABLE
@@ -1775,7 +1775,7 @@ PORTA                             00000005
 PORTB                             00000006
 POSITION1                         00000137
 POSITION2                         00000143
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 32
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 32
 Maze Solver
 
 SYMBOL TABLE
@@ -1834,7 +1834,7 @@ TRISA                             00000085
 TRISB                             00000086
 W                                 00000000
 WELCOME                           00000022
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 33
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 33
 Maze Solver
 
 SYMBOL TABLE
@@ -1888,7 +1888,7 @@ nb4                               00000364
 nb5                               00000369
 rectangle                         0000033C
 timerInterrupt                    00000121
-MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  11:38:09         PAGE 34
+MPASM  5.35beta                       PROGRAM.ASM   4-25-2017  13:06:05         PAGE 34
 Maze Solver
 
 MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
